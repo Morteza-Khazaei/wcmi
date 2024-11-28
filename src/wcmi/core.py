@@ -1,0 +1,278 @@
+import os
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from datetime import datetime
+import matplotlib.pyplot as plt
+from collections import defaultdict
+from scipy.optimize import least_squares, curve_fit
+
+
+from .oh import *
+from .wcm import *
+from .core import *
+
+
+
+
+
+class VegParamCal:
+
+    def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=18, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158, ], 
+                 risma_station=['MB1', 'MB5', 'MB5', 'MB9'], sensor_depth=[0, 5, 20, 50, 100]):
+        
+        self.k = self.wavenumber(S1_freq_GHz)
+        
+        if not dir_radar_sigma:
+            backscatter_dir = 'datasets/backscatter'
+        else:
+            backscatter_dir = dir_radar_sigma
+        
+        if not dir_risma:
+            risma_dir = 'datasets/RISMA'
+        else:
+            risma_dir = dir_risma
+        
+        backscatter_files = self.search_file(backscatter_dir, year_filter=year)
+
+        # filter risma csv files based on risma_station
+        for rst in risma_station:
+            risma_files = self.search_file(risma_dir, year_filter=year, station=rst)
+            for d in sensor_depth:
+                df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=S1_local_overpass_time, depth=d)
+
+                S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=aafc_croptype)
+                self.wcm_param = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, dict_risma=df_doy_depth)
+        
+        return None
+
+    def run(self):
+        return self.wcm_param
+
+    def wavenumber(self, freq):
+        freq *= 1e9  # convert to Hz
+        v = 299792458 * 1e2  # speed of light (cm/s)
+        return (2 * np.pi * freq) / v
+    
+    def to_power(self, dB):
+        return 10**(dB/10)
+
+    def to_dB(self, power):
+        return 10*np.log10(power)
+    
+    def exp_func(self, x, c, d):
+        return c * np.log(d * x)
+    
+    def residuals(self, params, vv_obs, theta_rad, ndvi):
+        A, B, mv, s = params
+        ks = self.k * s
+        V1, V2 = ndvi, ndvi
+
+        # Oh et al. (2004) model
+        o = Oh04(mv, ks, theta_rad)
+        vh_soil, vv_soil, hh_soil = o.get_sim()
+
+        # Water Cloud Model (WCM)
+        vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
+
+        vv_residual = np.square(vv_obs - vv_sim)
+
+        return vv_residual
+
+    def search_file(self, directory, extensions='csv', recursive=False, year_filter=None, station=None):
+
+        if not os.path.isdir(directory):
+            raise ValueError(f"Provided path is not a valid directory: {directory}")
+    
+        file_list = []
+
+        # Walk through directory
+        for root, _, files in os.walk(directory):
+            for file in files:
+                # Filter by extension
+                if extensions and not file.lower().endswith(tuple(extensions)):
+                    continue
+                
+                # Filter by year (or substring)
+                if year_filter and str(year_filter) not in file:
+                    continue
+
+                # Filter by year (or substring)
+                if station and str(station) not in file:
+                    continue
+                
+                file_path = os.path.join(root, file)
+                file_list.append(file_path)
+
+            if not recursive:
+                break
+        
+        return file_list
+
+    def read_risma_bulk_csv(self, fname, S1_lot, depth):
+        
+        df = pd.read_csv(fname, header=None, low_memory=False)
+        df = df.drop(index=[0,1,2,3,5])
+        df = df.reset_index(drop=True)
+        df[0] = pd.to_datetime(df[0], format='%Y-%m-%d %H:%M:%S')
+
+        # Set the datetime column as the index
+        df.set_index(df.columns[0], inplace=True)
+
+        df.columns = df.iloc[0]
+        df = df.iloc[1:]
+
+        # remove first part of the columns name
+        df.columns = [col.split('.')[1] for col in df.columns]
+
+        # Keep rows around -1 and +1 06:00 pm based on index in the df
+        df = df[(df.index.strftime('%H:%M') >= f'{S1_lot - 1}:00') & (df.index.strftime('%H:%M') <= f'{S1_lot + 1}:00')]
+
+        # filter df's columns contain 'Soil water content'
+        df = df[[col for col in df.columns if 'Soil water content' in col]]
+
+        # filter df for different depth
+        if depth == 0:
+            df = df[[col for col in df.columns if '0 to 5 cm' in col]]
+        else:
+            df = df[[col for col in df.columns if f'{depth} cm' in col]]
+
+        # Convert the soil moisture columns to numeric, handling non-numeric values
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')  # 'coerce' will set non-numeric values to NaN
+        
+        # create a dict of columns as key and reducer 'median' as value
+        aggregate = dict(zip(df.columns, ['median', ] * len(df.columns)))
+        
+        # Resample the data by day, calculating mean for soil moisture and sum for precipitation
+        daily_data = df.resample('D').agg(aggregate)
+
+        # Melt the DataFrame to long format for plotting, including precipitation
+        df_melted = daily_data.melt(ignore_index=False, var_name='sensor', value_name='value')
+        df_melted.index.name = 'date'
+
+        # add new column named doy
+        df_melted['doy'] = df_melted.index.dayofyear
+
+        # reset index inplace and set doy as index
+        df_melted.reset_index(inplace=True)
+        df_melted.set_index('date', inplace=True)
+
+        # drop Date inplace
+        # df_melted.drop('Date', axis=1, inplace=True)
+
+        return df_melted
+
+    def read_radar_backscatter(self, fname, croptype):
+
+        df = pd.read_csv(fname)
+
+        # Replace 0.0 with np.nan
+        df = df.replace(0.0, np.nan)
+
+        # keep rows where croptype is equal 158 in df
+        df = df[df['croptype'].isin(croptype)]
+
+        return df
+    
+    def calculate_WCM_param(self, df_sigma, dict_risma):
+
+        categorized_angle = defaultdict(list)
+
+        for lc, df_cluster in df_sigma.groupby('croptype'):
+
+            # drop unnecessary columns
+            df_cluster = df_cluster.drop(['system:index', '.geo', 'croptype'], axis=1)
+            df_t = df_cluster.T
+            df_t.index.rename('date', inplace=True)
+            df_t.reset_index(inplace=True)
+
+            # Add new column named 'band' by using of _** from20200902T001505_VH
+            df_t['band'] = df_t['date'].apply(lambda x: x.split('_')[1])
+
+            # convert date to datetime by removing _** from20200902T001505_VH
+            df_t['date'] = pd.to_datetime(df_t['date'].apply(lambda x: x.split('_')[0][:8])).dt.strftime('%Y%m%d')
+
+            # Calculate mean of duplicate rows in df_t on numeric columns
+            df_t = df_t.groupby(['date', 'band']).mean().reset_index()
+
+            
+
+            # Assuming you want to group the DataFrame 'df' in groups of three rows:
+            for g, df_c in df_t.groupby(np.arange(len(df_t)) // 4):
+
+                # Transpose to have four columns per day
+                df_ct = df_c.T
+
+                # Get date
+                date_string = list(set(df_ct.iloc[0].values))[0]
+                date_object = datetime.strptime(date_string, '%Y%m%d')
+                day_of_year = date_object.timetuple().tm_yday
+                print(f'{date_object}, doy: {day_of_year}')
+
+                # Use date as column names and drop first row
+                df_ct.columns = df_ct.iloc[1]
+                df_ct = df_ct[2:]
+                df_ct.reset_index(inplace=True, drop=True)
+
+                # Drop nodata
+                df_ct = df_ct[df_ct != 0].dropna()
+
+                if df_ct.shape[0] <= 30:
+                    continue
+                
+                # Initialize lists to store results
+                Avv, Bvv, mvs, kss = [], [], [], []
+                vv_tots, vv_soils, vv_vegs = [], [], []
+
+                for idx, row in df_ct.iterrows():
+                    # print(row.values)
+
+                    vh, vv, angle, vwc = row.values
+                    # print(vh, vv, angle, vwc)
+
+                    nearest_int_angle = round(angle)  # Find the nearest integer
+
+                    max_ssm = ssm + 0.05
+                    min_ssm = ssm - 0.05
+                    if min_ssm < 0:
+                        min_ssm = 0
+                    # print(min_ssm, ssm, max_ssm)
+
+                    # Degrees to Rad
+                    theta_rad0 = np.deg2rad(angle)
+
+                    # Initial guess for mv and ks
+                    initial_guess = [A_init, B_init, ssm, ssr]
+
+                    # Perform the optimization
+                    res = least_squares(self.residuals, initial_guess, args=(vv, theta_rad0, vwc), bounds=([A_min, B_min, min_ssm, ssr_min], [A_max, B_max, max_ssm, ssr_max]))
+                    A, B, mv, s = res.x
+                    ks = self.k * s
+                    # print(A, B, mv, ks)
+
+                    Avv.append(A)
+                    Bvv.append(B)
+                    mvs.append(mv)
+                    kss.append(ks)
+
+                    # Oh et al. (2004) model
+                    o = Oh04(mv, ks, theta_rad0)
+                    vh_soil, vv_soil, hh_soil = o.get_sim()
+
+                    # Water Cloud Model (WCM)
+                    V1, V2 = vwc, vwc
+                    vv_tot, vv_veg, tau = WCM(A_init, B_init, V1, V2, theta_rad0, vv_soil)
+
+                    # Append the results to the lists
+                    vv_tots.append(vv_tot)
+                    vv_soils.append(vv_soil)
+                    vv_vegs.append(vv_veg)
+                
+                    categorized_angle[nearest_int_angle] = [Avv, Bvv, mvs, kss]
+            
+        return categorized_angle
+                
+
+                
+
