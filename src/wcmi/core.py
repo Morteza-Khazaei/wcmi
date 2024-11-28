@@ -42,7 +42,7 @@ class VegParamCal:
                 df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=S1_local_overpass_time, depth=d)
 
                 S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=aafc_croptype)
-                self.wcm_param = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, dict_risma=df_doy_depth)
+                self.wcm_param = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, dict_risma=df_doy_depth.to_dict)
         
         return None
 
@@ -175,7 +175,7 @@ class VegParamCal:
 
         return df
     
-    def calculate_WCM_param(self, df_sigma, dict_risma):
+    def calculate_WCM_param(self, df_sigma, df_risma, default_wcm_params=None):
 
         categorized_angle = defaultdict(list)
 
@@ -195,8 +195,6 @@ class VegParamCal:
 
             # Calculate mean of duplicate rows in df_t on numeric columns
             df_t = df_t.groupby(['date', 'band']).mean().reset_index()
-
-            
 
             # Assuming you want to group the DataFrame 'df' in groups of three rows:
             for g, df_c in df_t.groupby(np.arange(len(df_t)) // 4):
@@ -220,6 +218,33 @@ class VegParamCal:
 
                 if df_ct.shape[0] <= 30:
                     continue
+                ssm = df_risma[df_risma.doy == day_of_year].value.mean()
+                print(f'SSM: {ssm}')
+
+                if not default_wcm_params:
+
+                    ssr_min = 0
+                    ssr_max = 5
+
+                    A_init = 1
+                    A_min = 0
+                    A_max = 2
+
+                    B_init = 0.25
+                    B_min = 0
+                    B_max = 0.5
+                
+                else:
+                    A_init, B_init, c, d, ssm_pre, ssr = default_wcm_params[day_of_year]
+                    print('init params:', f'AVV: {A_init}, Bvv: {B_init}, Cvv: {c}, Dvv: {d}, mv: {ssm_pre}, ks: {ssr}')
+                    A_min = 0
+                    A_max = 2
+
+                    B_min = 0
+                    B_max = 0.5
+
+                    ssr_min = 0
+                    ssr_max = 5
                 
                 # Initialize lists to store results
                 Avv, Bvv, mvs, kss = [], [], [], []
@@ -237,7 +262,6 @@ class VegParamCal:
                     min_ssm = ssm - 0.05
                     if min_ssm < 0:
                         min_ssm = 0
-                    # print(min_ssm, ssm, max_ssm)
 
                     # Degrees to Rad
                     theta_rad0 = np.deg2rad(angle)
