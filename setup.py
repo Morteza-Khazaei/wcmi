@@ -24,7 +24,7 @@ setup(
     license = 'MIT license',
     package_dir={'': 'src'},
     include_package_data=True,
-    package_data={'wcmi': ['backscatter/*.csv', 'RISMA/*.csv']},
+    package_data={'wcmi': ['datasets/backscatter/*.csv', 'datasets/RISMA/*.csv']},
     packages = find_packages(
         where='src', 
         # exclude=['dataset']
