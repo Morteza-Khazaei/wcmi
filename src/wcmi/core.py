@@ -218,34 +218,7 @@ class VegParamCal:
 
                 if df_ct.shape[0] <= 30:
                     continue
-                ssm = df_risma[df_risma.doy == day_of_year].value.mean()
-                print(f'SSM: {ssm}')
 
-                if not default_wcm_params:
-
-                    ssr_min = 0
-                    ssr_max = 5
-
-                    A_init = 1
-                    A_min = 0
-                    A_max = 2
-
-                    B_init = 0.25
-                    B_min = 0
-                    B_max = 0.5
-                
-                else:
-                    A_init, B_init, c, d, ssm_pre, ssr = default_wcm_params[day_of_year]
-                    print('init params:', f'AVV: {A_init}, Bvv: {B_init}, Cvv: {c}, Dvv: {d}, mv: {ssm_pre}, ks: {ssr}')
-                    A_min = 0
-                    A_max = 2
-
-                    B_min = 0
-                    B_max = 0.5
-
-                    ssr_min = 0
-                    ssr_max = 5
-                
                 # Initialize lists to store results
                 Avv, Bvv, mvs, kss = [], [], [], []
                 vv_tots, vv_soils, vv_vegs = [], [], []
@@ -258,10 +231,43 @@ class VegParamCal:
 
                     nearest_int_angle = round(angle)  # Find the nearest integer
 
-                    max_ssm = ssm + 0.05
-                    min_ssm = ssm - 0.05
-                    if min_ssm < 0:
-                        min_ssm = 0
+                    if not default_wcm_params:
+
+                        ssm = df_risma[df_risma.doy == day_of_year].value.mean()
+                        print(f'SSM: {ssm}')
+
+                        max_ssm = ssm + 0.05
+                        min_ssm = ssm - 0.05
+                        if min_ssm < 0:
+                            min_ssm = 0
+
+                        if angle < 36:
+                            ssr = 0.6
+                        else:
+                            ssr = 0.8
+
+                        ssr_min = 0
+                        ssr_max = 5
+
+                        A_init = 1
+                        A_min = 0
+                        A_max = 2
+
+                        B_init = 0.25
+                        B_min = 0
+                        B_max = 0.5
+                    
+                    else:
+                        A_init, B_init, c, d, ssm, ssr = default_wcm_params[day_of_year]
+                        print('init params:', f'AVV: {A_init}, Bvv: {B_init}, Cvv: {c}, Dvv: {d}, mv: {ssm}, ks: {ssr}')
+                        A_min = 0
+                        A_max = 2
+
+                        B_min = 0
+                        B_max = 0.5
+
+                        ssr_min = 0
+                        ssr_max = 5
 
                     # Degrees to Rad
                     theta_rad0 = np.deg2rad(angle)
@@ -296,7 +302,3 @@ class VegParamCal:
                     categorized_angle[nearest_int_angle] = [Avv, Bvv, mvs, kss]
             
         return categorized_angle
-                
-
-                
-
