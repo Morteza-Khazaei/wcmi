@@ -178,7 +178,7 @@ class VegParamCal:
         df = df.replace(0.0, np.nan)
 
         # keep rows where croptype is equal 158 in df
-        df = df[df['croptype'].isin(croptype)]
+        df = df[df['croptype'].isin([croptype, ])]
 
         return df
     
