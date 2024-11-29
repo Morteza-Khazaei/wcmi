@@ -50,11 +50,10 @@ class VegParamCal:
                 wcm_param_ct[rst] = wcm_param_dp
             self.wcm_param_ct_st_dp[ct] = wcm_param_ct
 
-        
         return None
 
     def run(self):
-        return self.wcm_param
+        return self.wcm_param_ct_st_dp
 
     def wavenumber(self, freq):
         freq *= 1e9  # convert to Hz
