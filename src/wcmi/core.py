@@ -229,7 +229,10 @@ class VegParamCal:
                 Avv, Bvv, mvs, kss = [], [], [], []
                 vv_tots, vv_soils, vv_vegs = [], [], []
 
-                categorized_angle = defaultdict(list)
+                categorized_angle_Avv = defaultdict(list)
+                categorized_angle_Bvv = defaultdict(list)
+                # categorized_angle_mvs = defaultdict(list)
+                # categorized_angle_kss = defaultdict(list)
 
                 for idx, row in df_ct.iterrows():
                     # print(row.values)
@@ -305,8 +308,11 @@ class VegParamCal:
                     vv_soils.append(vv_soil)
                     vv_vegs.append(vv_veg)
                 
-                    categorized_angle[nearest_int_angle] = [Avv, Bvv, mvs, kss]
+                    categorized_angle_Avv[nearest_int_angle].append(Avv)
+                    categorized_angle_Bvv[nearest_int_angle].append(Bvv)
+                    # categorized_angle_mvs[nearest_int_angle].append(mvs)
+                    # categorized_angle_kss[nearest_int_angle].append(kss)
                 
-                wcm_param_doy[day_of_year] = categorized_angle
+                wcm_param_doy[day_of_year] = [categorized_angle_Avv, categorized_angle_Bvv]
         
         return wcm_param_doy
