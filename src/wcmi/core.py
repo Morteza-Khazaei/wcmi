@@ -183,7 +183,7 @@ class VegParamCal:
     
     def calculate_WCM_param(self, df_sigma, df_risma, default_wcm_params=None):
 
-        categorized_angle = defaultdict(list)
+        wcm_param_doy = {}
 
         for lc, df_cluster in df_sigma.groupby('croptype'):
 
@@ -228,6 +228,8 @@ class VegParamCal:
                 # Initialize lists to store results
                 Avv, Bvv, mvs, kss = [], [], [], []
                 vv_tots, vv_soils, vv_vegs = [], [], []
+
+                categorized_angle = defaultdict(list)
 
                 for idx, row in df_ct.iterrows():
                     # print(row.values)
@@ -304,5 +306,7 @@ class VegParamCal:
                     vv_vegs.append(vv_veg)
                 
                     categorized_angle[nearest_int_angle] = [Avv, Bvv, mvs, kss]
-            
-        return categorized_angle
+                
+            wcm_param_doy[day_of_year] = categorized_angle
+        
+        return wcm_param_doy
