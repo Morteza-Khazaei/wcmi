@@ -234,7 +234,6 @@ class VegParamCal:
                     if not default_wcm_params:
 
                         ssm = df_risma[df_risma.doy == day_of_year].value.mean()
-                        print(f'SSM: {ssm}')
 
                         max_ssm = ssm + 0.05
                         min_ssm = ssm - 0.05
@@ -259,7 +258,6 @@ class VegParamCal:
                     
                     else:
                         A_init, B_init, c, d, ssm, ssr = default_wcm_params[day_of_year]
-                        print('init params:', f'AVV: {A_init}, Bvv: {B_init}, Cvv: {c}, Dvv: {d}, mv: {ssm}, ks: {ssr}')
                         A_min = 0
                         A_max = 2
 
