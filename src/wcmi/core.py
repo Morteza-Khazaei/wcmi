@@ -36,13 +36,20 @@ class VegParamCal:
         backscatter_files = self.search_file(backscatter_dir, year_filter=year)
 
         # filter risma csv files based on risma_station
-        for rst in risma_station:
-            risma_files = self.search_file(risma_dir, year_filter=year, station=rst)
-            for d in sensor_depth:
-                df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=S1_local_overpass_time, depth=d)
+        self.wcm_param_ct_st_dp = {}
+        for ct in aafc_croptype:
+            wcm_param_ct = {}
+            for rst in risma_station:
+                risma_files = self.search_file(risma_dir, year_filter=year, station=rst)
+                wcm_param_dp = {}
+                for dp in sensor_depth:
+                    df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=S1_local_overpass_time, depth=dp)
+                    S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=ct)
+                    wcm_param_dp[dp] = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth)
+                
+                wcm_param_ct[rst] = wcm_param_dp
+            self.wcm_param_ct_st_dp[ct] = wcm_param_ct
 
-                S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=aafc_croptype)
-                self.wcm_param = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth)
         
         return None
 
