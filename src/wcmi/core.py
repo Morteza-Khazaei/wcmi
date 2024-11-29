@@ -42,7 +42,7 @@ class VegParamCal:
                 df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=S1_local_overpass_time, depth=d)
 
                 S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=aafc_croptype)
-                self.wcm_param = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, dict_risma=df_doy_depth)
+                self.wcm_param = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth)
         
         return None
 
