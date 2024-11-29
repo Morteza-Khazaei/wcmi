@@ -307,6 +307,6 @@ class VegParamCal:
                 
                     categorized_angle[nearest_int_angle] = [Avv, Bvv, mvs, kss]
                 
-            wcm_param_doy[day_of_year] = categorized_angle
+                wcm_param_doy[day_of_year] = categorized_angle
         
         return wcm_param_doy
