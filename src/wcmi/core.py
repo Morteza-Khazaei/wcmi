@@ -6,6 +6,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from scipy.optimize import least_squares, curve_fit
+from sklearn.metrics import r2_score
 
 
 from .oh import *
@@ -67,7 +68,7 @@ class VegParamCal:
         return 10*np.log10(power)
     
     def exp_func(self, x, c, d):
-        return c * np.log(d * x)
+        return c * np.log(d * x + 1e-9) #add a small value to avoid log(0)
     
     def residuals(self, params, vv_obs, theta_rad, ndvi):
         A, B, mv, s = params
@@ -225,6 +226,10 @@ class VegParamCal:
                 if df_ct.shape[0] <= 30:
                     continue
 
+                vv_soils = []
+                mvs = []
+                kss = []
+
                 categorized_angle_Avv = defaultdict(list)
                 categorized_angle_Bvv = defaultdict(list)
 
@@ -235,7 +240,7 @@ class VegParamCal:
                     # print(vh, vv, angle, vwc)
 
                     nearest_int_angle = round(angle)  # Find the nearest integer
-
+                    
                     if not default_wcm_params:
 
                         ssm = df_risma[df_risma.doy == day_of_year].value.mean()
@@ -282,24 +287,45 @@ class VegParamCal:
                     res = least_squares(self.residuals, initial_guess, args=(vv, theta_rad0, vwc), bounds=([A_min, B_min, min_ssm, ssr_min], [A_max, B_max, max_ssm, ssr_max]))
                     A, B, mv, s = res.x
                     ks = self.k * s
-                    # print(A, B, mv, ks)
+                    
 
-                    # # Oh et al. (2004) model
-                    # o = Oh04(mv, ks, theta_rad0)
-                    # vh_soil, vv_soil, hh_soil = o.get_sim()
+                    # Oh et al. (2004) model
+                    o = Oh04(mv, ks, theta_rad0)
+                    vh_soil, vv_soil, hh_soil = o.get_sim()
 
-                    # # Water Cloud Model (WCM)
-                    # V1, V2 = vwc, vwc
-                    # vv_tot, vv_veg, tau = WCM(A_init, B_init, V1, V2, theta_rad0, vv_soil)
-                
+                    # Water Cloud Model (WCM)
+                    V1, V2 = vwc, vwc
+                    vv_tot, vv_veg, tau = WCM(A_init, B_init, V1, V2, theta_rad0, vv_soil)
+
+                    # Append the results to the lists
+                    vv_soils.append(vv_soil)
+                    mvs.append(mv)
+                    kss.append(ks)
+
+
                     categorized_angle_Avv[nearest_int_angle].append(A)
                     categorized_angle_Bvv[nearest_int_angle].append(B)
                     # categorized_angle_mvs[nearest_int_angle].append(mvs)
                     # categorized_angle_kss[nearest_int_angle].append(kss)
                 
-                # calculate mean of A and B for each angle
-                categorized_angle_Avv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Avv.items()))
-                categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
-                wcm_param_doy[day_of_year] = [categorized_angle_Avv_mean, categorized_angle_Bvv_mean]
+                # calculate mean of wcm
+                mvs_arr_x = np.array(mvs)
+                kss_arr_x = np.array(kss)
+                vv_soils_arr_y = np.array(self.to_dB(vv_soils))
+                
+                try:
+                    params, covariance = curve_fit(self.exp_func, mvs_arr_x, vv_soils_arr_y)
+                    Cvv, Dvv = params
+                except RuntimeError as e:
+                    print(f"Error fitting curve for day {day_of_year}: {e}")
+                    continue
+
+                # Calculate the R-squared value
+                y_fit = exp_func(mvs_arr_x, Cvv, Dvv)
+                r2_ssm = r2_score(vv_soils_arr_y, y_fit)
+                print(f'Sample Size: {mvs_arr_x.shape[0]}, SSM vs obs_vv, R2:, {r2_ssm:.2f}')
+                categorized_angle_Avv_md = dict(map(lambda el: (el[0], np.array(el[1]).median()), categorized_angle_Avv.items()))
+                categorized_angle_Bvv_md = dict(map(lambda el: (el[0], np.array(el[1]).median()), categorized_angle_Bvv.items()))
+                wcm_param_doy[day_of_year] = [categorized_angle_Avv_md, categorized_angle_Bvv_md]
         
         return wcm_param_doy
