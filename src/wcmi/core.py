@@ -61,6 +61,13 @@ class VegParamCal:
         v = 299792458 * 1e2  # speed of light (cm/s)
         return (2 * np.pi * freq) / v
     
+    def mergeDictionary(self, dict1, dict2):
+        merged = {**dict1, **dict2}
+        for key, value in merged.items():
+            if key in dict1 and key in dict2:
+                    merged[key] = [value , dict1[key]]
+        return merged
+    
     def to_power(self, dB):
         return 10**(dB/10)
 
@@ -226,12 +233,15 @@ class VegParamCal:
                 if df_ct.shape[0] <= 30:
                     continue
 
+                categorized_angle_Avv = defaultdict(list)
+                categorized_angle_Bvv = defaultdict(list)
+                categorized_angle_mvs = defaultdict(list)
+                categorized_angle_vv_soil = defaultdict(list)
+
                 vv_soils = []
                 mvs = []
                 kss = []
 
-                categorized_angle_Avv = defaultdict(list)
-                categorized_angle_Bvv = defaultdict(list)
 
                 for idx, row in df_ct.iterrows():
                     # print(row.values)
@@ -288,7 +298,6 @@ class VegParamCal:
                     A, B, mv, s = res.x
                     ks = self.k * s
                     
-
                     # Oh et al. (2004) model
                     o = Oh04(mv, ks, theta_rad0)
                     vh_soil, vv_soil, hh_soil = o.get_sim()
@@ -297,35 +306,17 @@ class VegParamCal:
                     V1, V2 = vwc, vwc
                     vv_tot, vv_veg, tau = WCM(A_init, B_init, V1, V2, theta_rad0, vv_soil)
 
-                    # Append the results to the lists
-                    vv_soils.append(vv_soil)
-                    mvs.append(mv)
-                    kss.append(ks)
-
-
                     categorized_angle_Avv[nearest_int_angle].append(A)
                     categorized_angle_Bvv[nearest_int_angle].append(B)
-                    # categorized_angle_mvs[nearest_int_angle].append(mvs)
-                    # categorized_angle_kss[nearest_int_angle].append(kss)
-                
-                # calculate mean of wcm
-                mvs_arr_x = np.array(mvs)
-                kss_arr_x = np.array(kss)
-                vv_soils_arr_y = np.array(self.to_dB(vv_soils))
-                
-                try:
-                    params, covariance = curve_fit(self.exp_func, mvs_arr_x, vv_soils_arr_y)
-                    Cvv, Dvv = params
-                except RuntimeError as e:
-                    print(f"Error fitting curve for day {day_of_year}: {e}")
-                    continue
+                    categorized_angle_mvs[nearest_int_angle].append(mv)
+                    categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soils))
 
-                # Calculate the R-squared value
-                y_fit = self.exp_func(mvs_arr_x, Cvv, Dvv)
-                r2_ssm = r2_score(vv_soils_arr_y, y_fit)
-                print(f'Sample Size: {mvs_arr_x.shape[0]}, SSM vs obs_vv, R2:, {r2_ssm:.2f}')
                 categorized_angle_Avv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Avv.items()))
                 categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
-                wcm_param_doy[day_of_year] = [categorized_angle_Avv_mean, categorized_angle_Bvv_mean]
+                
+                merged_angle_vv_soils_mvs_arr = self.mergeDictionary(categorized_angle_mvs, categorized_angle_vv_soil)
+                categorized_angle_Cvv_Dvv = dict(map(lambda el: (el[0], curve_fit(self.exp_func, el[1][0], el[1][1])[0]), 
+                    merged_angle_vv_soils_mvs_arr.items()))
+                wcm_param_doy[day_of_year] = [categorized_angle_Avv_mean, categorized_angle_Bvv_mean, categorized_angle_Cvv_Dvv]
         
         return wcm_param_doy
