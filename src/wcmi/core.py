@@ -225,14 +225,8 @@ class VegParamCal:
                 if df_ct.shape[0] <= 30:
                     continue
 
-                # Initialize lists to store results
-                Avv, Bvv, mvs, kss = [], [], [], []
-                vv_tots, vv_soils, vv_vegs = [], [], []
-
                 categorized_angle_Avv = defaultdict(list)
                 categorized_angle_Bvv = defaultdict(list)
-                # categorized_angle_mvs = defaultdict(list)
-                # categorized_angle_kss = defaultdict(list)
 
                 for idx, row in df_ct.iterrows():
                     # print(row.values)
@@ -290,26 +284,16 @@ class VegParamCal:
                     ks = self.k * s
                     # print(A, B, mv, ks)
 
-                    Avv.append(A)
-                    Bvv.append(B)
-                    mvs.append(mv)
-                    kss.append(ks)
+                    # # Oh et al. (2004) model
+                    # o = Oh04(mv, ks, theta_rad0)
+                    # vh_soil, vv_soil, hh_soil = o.get_sim()
 
-                    # Oh et al. (2004) model
-                    o = Oh04(mv, ks, theta_rad0)
-                    vh_soil, vv_soil, hh_soil = o.get_sim()
-
-                    # Water Cloud Model (WCM)
-                    V1, V2 = vwc, vwc
-                    vv_tot, vv_veg, tau = WCM(A_init, B_init, V1, V2, theta_rad0, vv_soil)
-
-                    # Append the results to the lists
-                    vv_tots.append(vv_tot)
-                    vv_soils.append(vv_soil)
-                    vv_vegs.append(vv_veg)
+                    # # Water Cloud Model (WCM)
+                    # V1, V2 = vwc, vwc
+                    # vv_tot, vv_veg, tau = WCM(A_init, B_init, V1, V2, theta_rad0, vv_soil)
                 
-                    categorized_angle_Avv[nearest_int_angle].append(Avv)
-                    categorized_angle_Bvv[nearest_int_angle].append(Bvv)
+                    categorized_angle_Avv[nearest_int_angle].append(A)
+                    categorized_angle_Bvv[nearest_int_angle].append(B)
                     # categorized_angle_mvs[nearest_int_angle].append(mvs)
                     # categorized_angle_kss[nearest_int_angle].append(kss)
                 
