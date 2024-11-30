@@ -324,8 +324,8 @@ class VegParamCal:
                 y_fit = self.exp_func(mvs_arr_x, Cvv, Dvv)
                 r2_ssm = r2_score(vv_soils_arr_y, y_fit)
                 print(f'Sample Size: {mvs_arr_x.shape[0]}, SSM vs obs_vv, R2:, {r2_ssm:.2f}')
-                categorized_angle_Avv_md = dict(map(lambda el: (el[0], np.array(el[1]).median()), categorized_angle_Avv.items()))
-                categorized_angle_Bvv_md = dict(map(lambda el: (el[0], np.array(el[1]).median()), categorized_angle_Bvv.items()))
-                wcm_param_doy[day_of_year] = [categorized_angle_Avv_md, categorized_angle_Bvv_md]
+                categorized_angle_Avv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Avv.items()))
+                categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
+                wcm_param_doy[day_of_year] = [categorized_angle_Avv_mean, categorized_angle_Bvv_mean]
         
         return wcm_param_doy
