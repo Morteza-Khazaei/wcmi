@@ -315,7 +315,7 @@ class VegParamCal:
                 categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
                 
                 merged_angle_vv_soils_mvs_arr = self.mergeDictionary(categorized_angle_mvs, categorized_angle_vv_soil)
-                categorized_angle_Cvv_Dvv = dict(map(lambda el: (el[0], curve_fit(self.exp_func, el[1][0], el[1][1])[0]), 
+                categorized_angle_Cvv_Dvv = dict(map(lambda el: (el[0], curve_fit(self.exp_func, np.array(el[1][0]), np.array(el[1][1]))), 
                     merged_angle_vv_soils_mvs_arr.items()))
                 wcm_param_doy[day_of_year] = [categorized_angle_Avv_mean, categorized_angle_Bvv_mean, categorized_angle_Cvv_Dvv]
         
