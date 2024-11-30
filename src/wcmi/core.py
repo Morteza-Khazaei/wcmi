@@ -297,6 +297,9 @@ class VegParamCal:
                     # categorized_angle_mvs[nearest_int_angle].append(mvs)
                     # categorized_angle_kss[nearest_int_angle].append(kss)
                 
-                wcm_param_doy[day_of_year] = [categorized_angle_Avv, categorized_angle_Bvv]
+                # calculate mean of A and B for each angle
+                categorized_angle_Avv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Avv.items()))
+                categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
+                wcm_param_doy[day_of_year] = [categorized_angle_Avv_mean, categorized_angle_Bvv_mean]
         
         return wcm_param_doy
