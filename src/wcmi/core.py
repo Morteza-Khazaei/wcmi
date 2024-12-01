@@ -69,10 +69,10 @@ class VegParamCal:
     #     return merged
 
     def mergeDictionary(self, dict1, dict2):
-        merged = dict1.copy()  # Start with a copy of the first dictionary
-        for key, value in dict2.items():
-            if key in dict1:
-                merged[key] = [value, dict1[key]]  # Combine values if key exists in both
+        merged = dict2.copy()  # Start with a copy of the first dictionary
+        for key, value in dict1.items():
+            if key in dict2:
+                merged[key] = [value, dict2[key]]  # Combine values if key exists in both
             else:
                 merged[key] = value  # Add the new key-value pair
         return merged
