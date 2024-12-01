@@ -83,10 +83,14 @@ class VegParamCal:
         def exp_func(x, c, d):
             return c * np.log(d * x)
         
-        params, covariance = curve_fit(exp_func, x_arr, y_arr)
-        Cvv, Dvv = params
-        
-        return Cvv, Dvv
+        # check if array is not (1, )
+        if x_arr.shape == (1,) or y_arr.shape == (1,):
+            return 0, 0
+        else:
+            params, covariance = curve_fit(exp_func, x_arr, y_arr)
+            Cvv, Dvv = params
+            
+            return Cvv, Dvv
     
     def residuals(self, params, vv_obs, theta_rad, ndvi):
         A, B, mv, s = params
