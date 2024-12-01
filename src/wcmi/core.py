@@ -330,7 +330,6 @@ class VegParamCal:
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
-                merged_wcm_params = self.mergeDictionary(merged_angle_Avv_Bvv, merged_angle_Cvv_Dvv)
-                wcm_param_doy[day_of_year] = merged_wcm_params
+                wcm_param_doy[day_of_year] = self.mergeDictionary(merged_angle_Cvv_Dvv, merged_angle_Avv_Bvv)
         
         return wcm_param_doy
