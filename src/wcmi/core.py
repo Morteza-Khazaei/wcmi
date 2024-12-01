@@ -90,7 +90,7 @@ class VegParamCal:
                 Cvv, Dvv = params
             
                 return Cvv, Dvv
-            exepct:
+            except:
                 return np.nan, np.nan
     
     def residuals(self, params, vv_obs, theta_rad, ndvi):
