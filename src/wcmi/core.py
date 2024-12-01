@@ -309,18 +309,18 @@ class VegParamCal:
                     categorized_angle_Avv[nearest_int_angle].append(A)
                     categorized_angle_Bvv[nearest_int_angle].append(B)
                     categorized_angle_mvs[nearest_int_angle].append(mv)
-                    categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soils))
+                    categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
 
                 categorized_angle_Avv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Avv.items()))
                 categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
-                print(dict(categorized_angle_mvs))
-                print()
-                print(dict(categorized_angle_vv_soil))
-                print()
+                # print(dict(categorized_angle_mvs))
+                # print()
+                # print(dict(categorized_angle_vv_soil))
+                # print()
 
-                merged_angle_vv_soils_mvs = self.mergeDictionary(dict(categorized_angle_mvs), dict(categorized_angle_vv_soil))
+                merged_angle_vv_soils_mvs = self.mergeDictionary(categorized_angle_mvs, categorized_angle_vv_soil)
                 # categorized_angle_Cvv_Dvv = dict(map(lambda el: (el[0], curve_fit(self.exp_func, np.array(el[1][0]), np.array(el[1][1]))), 
                 #     merged_angle_vv_soils_mvs_arr.items()))
-                wcm_param_doy[day_of_year] = [categorized_angle_Avv_mean, categorized_angle_Bvv_mean, merged_angle_vv_soils_mvs.values()]
+                wcm_param_doy[day_of_year] = [categorized_angle_Avv_mean, categorized_angle_Bvv_mean, merged_angle_vv_soils_mvs]
         
         return wcm_param_doy
