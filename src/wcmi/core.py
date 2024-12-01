@@ -77,20 +77,21 @@ class VegParamCal:
     def curve_fit_Cvv_Dvv(self, x_arr, y_arr):
         x_arr = np.array(x_arr)
         y_arr = np.array(y_arr)
-        print(x_arr)
-        print(y_arr)
         
         def exp_func(x, c, d):
-            return c * np.log(d * x)
+            return c * np.log(d * x + 1e-9) #add a small value to avoid log(0)
         
         # check if array is not (1, )
         if x_arr.shape == (1,) or y_arr.shape == (1,):
-            return 0, 0
+            return np.nan, np.nan
         else:
-            params, covariance = curve_fit(exp_func, x_arr, y_arr)
-            Cvv, Dvv = params
+            try:
+                params, covariance = curve_fit(exp_func, x_arr, y_arr)
+                Cvv, Dvv = params
             
-            return Cvv, Dvv
+                return Cvv, Dvv
+            exepct:
+                return np.nan, np.nan
     
     def residuals(self, params, vv_obs, theta_rad, ndvi):
         A, B, mv, s = params
