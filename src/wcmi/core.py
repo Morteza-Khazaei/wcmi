@@ -61,11 +61,20 @@ class VegParamCal:
         v = 299792458 * 1e2  # speed of light (cm/s)
         return (2 * np.pi * freq) / v
     
+    # def mergeDictionary(self, dict1, dict2):
+    #     merged = {**dict1, **dict2}
+    #     for key, value in merged.items():
+    #         if key in dict1 and key in dict2:
+    #                 merged[key] = [value , dict1[key]]
+    #     return merged
+
     def mergeDictionary(self, dict1, dict2):
-        merged = {**dict1, **dict2}
-        for key, value in merged.items():
-            if key in dict1 and key in dict2:
-                    merged[key] = [value , dict1[key]]
+        merged = dict1.copy()  # Start with a copy of the first dictionary
+        for key, value in dict2.items():
+            if key in dict1:
+                merged[key] = [value, dict1[key]]  # Combine values if key exists in both
+            else:
+                merged[key] = value  # Add the new key-value pair
         return merged
     
     def to_power(self, dB):
@@ -326,10 +335,10 @@ class VegParamCal:
                 categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
                 merged_angle_Avv_Bvv = self.mergeDictionary(categorized_angle_Avv_mean, categorized_angle_Bvv_mean)
 
-                merged_angle_vv_soils_mvs = self.mergeDictionary(categorized_angle_vv_soil, categorized_angle_mvs)
+                merged_angle_vv_soils_mvs = self.mergeDictionary(categorized_angle_mvs, categorized_angle_vv_soil)
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
-                wcm_param_doy[day_of_year] = self.mergeDictionary(merged_angle_Cvv_Dvv, merged_angle_Avv_Bvv)
+                wcm_param_doy[day_of_year] = self.mergeDictionary(merged_angle_Avv_Bvv, merged_angle_Cvv_Dvv)
         
         return wcm_param_doy
