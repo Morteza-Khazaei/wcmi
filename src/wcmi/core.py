@@ -75,10 +75,15 @@ class VegParamCal:
         return 10*np.log10(power)
     
     def curve_fit_Cvv_Dvv(self, x_arr, y_arr):
+        x_arr = np.array(x_arr).flatten()
+        y_arr = np.array(y_arr).flatten()
+        
         def exp_func(x, c, d):
-            return c * np.log(d * x)
+            return c * np.log(d * x + 1e-9) # Ensure x is treated as an array
+        
         params, covariance = curve_fit(exp_func, x_arr, y_arr)
         Cvv, Dvv = params
+        
         return Cvv, Dvv
     
     def residuals(self, params, vv_obs, theta_rad, ndvi):
@@ -319,7 +324,7 @@ class VegParamCal:
                 categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
 
                 merged_angle_vv_soils_mvs = self.mergeDictionary(categorized_angle_vv_soil, categorized_angle_mvs)
-                categorized_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(np.array(el[1][0]), np.array(el[1][1]))), 
+                categorized_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 wcm_param_doy[day_of_year] = [categorized_angle_Avv_mean, categorized_angle_Bvv_mean, categorized_angle_Cvv_Dvv]
         
