@@ -75,11 +75,13 @@ class VegParamCal:
         return 10*np.log10(power)
     
     def curve_fit_Cvv_Dvv(self, x_arr, y_arr):
-        x_arr = np.array(x_arr).flatten()
-        y_arr = np.array(y_arr).flatten()
+        x_arr = np.array(x_arr)
+        y_arr = np.array(y_arr)
+        print(x_arr)
+        print(y_arr)
         
         def exp_func(x, c, d):
-            return c * np.log(d * x + 1e-9) # Ensure x is treated as an array
+            return c * np.log(d * x)
         
         params, covariance = curve_fit(exp_func, x_arr, y_arr)
         Cvv, Dvv = params
