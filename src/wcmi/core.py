@@ -74,10 +74,9 @@ class VegParamCal:
     def to_dB(self, power):
         return 10*np.log10(power)
     
-    def exp_func(self, x, c, d):
-        return c * np.log(d * x)
-    
     def curve_fit_Cvv_Dvv(self, x_arr, y_arr):
+        def exp_func(x, c, d):
+            return c * np.log(d * x)
         params, covariance = curve_fit(exp_func, x_arr, y_arr)
         Cvv, Dvv = params
         return Cvv, Dvv
