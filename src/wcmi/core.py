@@ -19,8 +19,8 @@ from .core import *
 
 class VegParamCal:
 
-    def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=18, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158, ], 
-                 risma_station=['MB1', 'MB5', 'MB5', 'MB9'], sensor_depth=[0, 5, 20, 50, 100]):
+    def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=18, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
+                 risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05):
         
         self.k = self.wavenumber(S1_freq_GHz)
         
@@ -43,10 +43,19 @@ class VegParamCal:
             for rst in risma_station:
                 risma_files = self.search_file(risma_dir, year_filter=year, station=rst)
                 wcm_param_dp = {}
+                default_wcm_params = None
                 for dp in sensor_depth:
                     df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=S1_local_overpass_time, depth=dp)
                     S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=ct)
-                    wcm_param_dp[dp] = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth)
+
+                    if not default_wcm_params:
+                        default_wcm_params = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr)
+                    
+                    wcm_param_dp[dp] = self.calculate_WCM_param(
+                        df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params)
+                    
+                    # set default_wcm_params none
+                    default_wcm_params = None
                 
                 wcm_param_ct[rst] = wcm_param_dp
             self.wcm_param_ct_st_dp[ct] = wcm_param_ct
@@ -60,13 +69,6 @@ class VegParamCal:
         freq *= 1e9  # convert to Hz
         v = 299792458 * 1e2  # speed of light (cm/s)
         return (2 * np.pi * freq) / v
-    
-    # def mergeDictionary(self, dict1, dict2):
-    #     merged = {**dict1, **dict2}
-    #     for key, value in merged.items():
-    #         if key in dict1 and key in dict2:
-    #                 merged[key] = [value , dict1[key]]
-    #     return merged
 
     def mergeDictionary(self, dict1, dict2):
         merged = dict2.copy()  # Start with a copy of the first dictionary
@@ -209,7 +211,7 @@ class VegParamCal:
 
         return df
     
-    def calculate_WCM_param(self, df_sigma, df_risma, default_wcm_params=None):
+    def calculate_WCM_param(self, df_sigma, df_risma, ssm_inv_thr, default_wcm_params=None):
 
         wcm_param_doy = {}
 
@@ -240,7 +242,7 @@ class VegParamCal:
                 date_string = list(set(df_ct.iloc[0].values))[0]
                 date_object = datetime.strptime(date_string, '%Y%m%d')
                 day_of_year = date_object.timetuple().tm_yday
-                print(f'{date_object}, doy: {day_of_year}')
+                print(f'Croptype: {lc}, date: {date_object}, doy: {day_of_year}')
 
                 # Use date as column names and drop first row
                 df_ct.columns = df_ct.iloc[1]
@@ -256,12 +258,8 @@ class VegParamCal:
                 categorized_angle_Avv = defaultdict(list)
                 categorized_angle_Bvv = defaultdict(list)
                 categorized_angle_mvs = defaultdict(list)
+                categorized_angle_ssr = defaultdict(list)
                 categorized_angle_vv_soil = defaultdict(list)
-
-                vv_soils = []
-                mvs = []
-                kss = []
-
 
                 for idx, row in df_ct.iterrows():
                     # print(row.values)
@@ -275,37 +273,32 @@ class VegParamCal:
 
                         ssm = df_risma[df_risma.doy == day_of_year].value.mean()
 
-                        max_ssm = ssm + 0.05
-                        min_ssm = ssm - 0.05
-                        if min_ssm < 0:
-                            min_ssm = 0
-
                         if angle < 36:
                             ssr = 0.6
                         else:
                             ssr = 0.8
 
-                        ssr_min = 0
-                        ssr_max = 5
-
                         A_init = 1
-                        A_min = 0
-                        A_max = 2
-
                         B_init = 0.25
-                        B_min = 0
-                        B_max = 0.5
+                        
                     
                     else:
-                        A_init, B_init, c, d, ssm, ssr = default_wcm_params[day_of_year]
-                        A_min = 0
-                        A_max = 2
+                        A_init, B_init, Cvv, Dvv, ssm, ssr = default_wcm_params[day_of_year][angle]
 
-                        B_min = 0
-                        B_max = 0.5
 
-                        ssr_min = 0
-                        ssr_max = 5
+                    max_ssm = ssm + ssm_inv_thr
+                    min_ssm = ssm - ssm_inv_thr
+                    if min_ssm < 0:
+                        min_ssm = 0
+                    
+                    ssr_min = 0
+                    ssr_max = 5
+
+                    A_min = 0
+                    A_max = 2
+
+                    B_min = 0
+                    B_max = 0.5
 
                     # Degrees to Rad
                     theta_rad0 = np.deg2rad(angle)
@@ -314,7 +307,8 @@ class VegParamCal:
                     initial_guess = [A_init, B_init, ssm, ssr]
 
                     # Perform the optimization
-                    res = least_squares(self.residuals, initial_guess, args=(vv, theta_rad0, vwc), bounds=([A_min, B_min, min_ssm, ssr_min], [A_max, B_max, max_ssm, ssr_max]))
+                    res = least_squares(self.residuals, initial_guess, args=(vv, theta_rad0, vwc), 
+                        bounds=([A_min, B_min, min_ssm, ssr_min], [A_max, B_max, max_ssm, ssr_max]))
                     A, B, mv, s = res.x
                     ks = self.k * s
                     
@@ -322,23 +316,30 @@ class VegParamCal:
                     o = Oh04(mv, ks, theta_rad0)
                     vh_soil, vv_soil, hh_soil = o.get_sim()
 
-                    # Water Cloud Model (WCM)
-                    V1, V2 = vwc, vwc
-                    vv_tot, vv_veg, tau = WCM(A_init, B_init, V1, V2, theta_rad0, vv_soil)
+                    # # Water Cloud Model (WCM)
+                    # V1, V2 = vwc, vwc
+                    # vv_tot, vv_veg, tau = WCM(A_init, B_init, V1, V2, theta_rad0, vv_soil)
 
                     categorized_angle_Avv[nearest_int_angle].append(A)
                     categorized_angle_Bvv[nearest_int_angle].append(B)
                     categorized_angle_mvs[nearest_int_angle].append(mv)
+                    categorized_angle_ssr[nearest_int_angle].append(s)
                     categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
 
                 categorized_angle_Avv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Avv.items()))
                 categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
+                categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_mvs.items()))
+                categorized_angle_ssr_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_ssr.items()))
                 merged_angle_Avv_Bvv = self.mergeDictionary(categorized_angle_Avv_mean, categorized_angle_Bvv_mean)
+                merged_angle_mvs_ssr = self.mergeDictionary(categorized_angle_mvs_mean, categorized_angle_ssr_mean)
 
                 merged_angle_vv_soils_mvs = self.mergeDictionary(categorized_angle_mvs, categorized_angle_vv_soil)
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
-                wcm_param_doy[day_of_year] = self.mergeDictionary(merged_angle_Avv_Bvv, merged_angle_Cvv_Dvv)
+                merged_wcm_params = self.mergeDictionary(merged_angle_Avv_Bvv, merged_angle_Cvv_Dvv)
+                merged_wcm_params = self.mergeDictionary(merged_wcm_params, merged_angle_mvs_ssr)
+                
+                wcm_param_doy[day_of_year] = merged_wcm_params
         
         return wcm_param_doy
