@@ -20,7 +20,7 @@ from .core import *
 class VegParamCal:
 
     def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=18, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
-                 risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05):
+                 risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05, ssr_lt_36deg=0.8, ssr_gt_36deg=0.9):
         
         self.k = self.wavenumber(S1_freq_GHz)
         
@@ -53,10 +53,12 @@ class VegParamCal:
 
                     if not default_wcm_params:
                         print(f'Calculate default wcm params for croptype: {ct}, station: {rst}, depth: {dp}')
-                        default_wcm_params = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr)
+                        default_wcm_params = self.calculate_WCM_param(
+                            df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
                     wcm_param_dp[dp] = self.calculate_WCM_param(
-                        df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params)
+                        df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
+                        ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
                     # set default_wcm_params none
                     default_wcm_params = None
@@ -215,7 +217,7 @@ class VegParamCal:
 
         return df
     
-    def calculate_WCM_param(self, df_sigma, df_risma, ssm_inv_thr, default_wcm_params=None):
+    def calculate_WCM_param(self, df_sigma, df_risma, ssm_inv_thr, default_wcm_params, ssr_lt_36deg, ssr_gt_36deg):
 
         wcm_param_doy = {}
 
@@ -278,9 +280,9 @@ class VegParamCal:
                         ssm = df_risma[df_risma.doy == day_of_year].value.mean()
 
                         if angle < 36:
-                            ssr = 0.6
+                            ssr = ssr_lt_36deg
                         else:
-                            ssr = 0.8
+                            ssr = ssr_gt_36deg
 
                         A_init = 1
                         B_init = 0.25
