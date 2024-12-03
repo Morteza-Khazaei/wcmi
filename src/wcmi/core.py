@@ -54,7 +54,8 @@ class VegParamCal:
                     if not default_wcm_params:
                         print(f'Calculate default wcm params for croptype: {ct}, station: {rst}, depth: {dp}')
                         default_wcm_params = self.calculate_WCM_param(
-                            df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
+                            df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
+                            ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
                     wcm_param_dp[dp] = self.calculate_WCM_param(
                         df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
