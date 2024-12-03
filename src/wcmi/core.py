@@ -318,11 +318,15 @@ class VegParamCal:
                     initial_guess = [A_init, B_init, ssm, ssr]
 
                     # Perform the optimization
-                    res = least_squares(self.residuals, initial_guess, args=(vv, theta_rad0, vwc), 
-                        bounds=([A_min, B_min, min_ssm, ssr_min], [A_max, B_max, max_ssm, ssr_max]))
-                    A, B, mv, s = res.x
-                    ks = self.k * s
-                    
+                    try:
+                        res = least_squares(self.residuals, initial_guess, args=(vv, theta_rad0, vwc), 
+                            bounds=([A_min, B_min, min_ssm, ssr_min], [A_max, B_max, max_ssm, ssr_max]))
+                        A, B, mv, s = res.x
+                        ks = self.k * s
+                    except:
+                        A, B, mv, s = [np.nan, np.nan, np.nan, np.nan]
+                        ks = np.nan
+
                     # Oh et al. (2004) model
                     o = Oh04(mv, ks, theta_rad0)
                     vh_soil, vv_soil, hh_soil = o.get_sim()
