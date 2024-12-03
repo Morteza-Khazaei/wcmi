@@ -99,9 +99,9 @@ class VegParamCal:
         try:
             params, covariance = curve_fit(exp_func, x_arr, y_arr)
             Cvv, Dvv = params
-            return Cvv, Dvv
+            return [Cvv, Dvv]
         except:
-            return np.nan, np.nan
+            return [np.nan, np.nan]
     
     def residuals(self, params, vv_obs, theta_rad, ndvi):
         A, B, mv, s = params
@@ -288,7 +288,10 @@ class VegParamCal:
                     
                     else:
                         print(default_wcm_params[day_of_year][nearest_int_angle])
-                        A_init, B_init, Cvv, Dvv, ssm, ssr = default_wcm_params[day_of_year][nearest_int_angle]
+                        wcm_params = default_wcm_params[day_of_year][nearest_int_angle]
+                        A_init, B_init = wcm_params[0][0]
+                        # Cvv, Dvv = wcm_params[0][1]
+                        ssm, ssr = wcm_params[1]
 
 
                     max_ssm = ssm + ssm_inv_thr
