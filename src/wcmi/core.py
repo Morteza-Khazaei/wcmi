@@ -45,10 +45,14 @@ class VegParamCal:
                 wcm_param_dp = {}
                 default_wcm_params = None
                 for dp in sensor_depth:
+                    print(f'Croptype: {ct}, Station: {rst}, Depth: {dp}')
+                    # read risma bulk csv
                     df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=S1_local_overpass_time, depth=dp)
+                    # read radar backscatter csv
                     S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=ct)
 
                     if not default_wcm_params:
+                        print(f'Calculate default wcm params for croptype: {ct}, station: {rst}, depth: {dp}')
                         default_wcm_params = self.calculate_WCM_param(df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr)
                     
                     wcm_param_dp[dp] = self.calculate_WCM_param(
@@ -283,7 +287,7 @@ class VegParamCal:
                         
                     
                     else:
-                        A_init, B_init, Cvv, Dvv, ssm, ssr = default_wcm_params[day_of_year][angle]
+                        A_init, B_init, Cvv, Dvv, ssm, ssr = default_wcm_params[day_of_year][nearest_int_angle]
 
 
                     max_ssm = ssm + ssm_inv_thr
