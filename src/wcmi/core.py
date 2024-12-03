@@ -287,7 +287,7 @@ class VegParamCal:
                         
                     
                     else:
-                        print(default_wcm_params[day_of_year][nearest_int_angle])
+                        # print(default_wcm_params[day_of_year][nearest_int_angle])
                         wcm_params = default_wcm_params[day_of_year][nearest_int_angle]
                         A_init, B_init = wcm_params[0][0]
                         # Cvv, Dvv = wcm_params[0][1]
