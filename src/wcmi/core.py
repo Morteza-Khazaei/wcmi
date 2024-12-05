@@ -22,6 +22,8 @@ class VegParamCal:
     def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=18, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
                  risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05, ssr_lt_36deg=0.8, ssr_gt_36deg=0.9):
         
+        self.wcm_fname = f'wcm_param_{self.list_to_str(aafc_croptype)}_{self.list_to_str(risma_station)}_{self.list_to_str(sensor_depth)}'
+        
         self.k = self.wavenumber(S1_freq_GHz)
         
         if not dir_radar_sigma:
@@ -69,14 +71,110 @@ class VegParamCal:
 
         return None
 
-    def run(self):
-        return self.wcm_param_ct_st_dp
+    def run(self, save_as_csv=False):
+
+        df = self.dict_to_df(self.wcm_param_ct_st_dp)
+        
+        if save_as_csv:
+            df.to_csv(f'{self.wcm_fname}.csv', index=False)
+            print(f'Saved WCM parameters df to {self.csv_fname}')
+
+        return df
+
+    def plot_wcm_param(self, df, param_to_plot=['A', 'B', 'C', 'D'], hue='angle (deg)', style='RISMA', palette='viridis', markers=True, dashes=False, save_graph=False):
+        # Create a four-row, one-column grid of subplots
+        fig, axes = plt.subplots(len(param_to_plot), 1, figsize=(10, 12), sharex=True)
+
+        # Loop through each constant and create a lineplot
+        for i, constant in enumerate(param_to_plot):
+            sns.lineplot(ax=axes[i], x='doy', y=constant, hue=hue, style=style, palette=palette, data=df_melted, markers=markers, dashes=dashes)
+            axes[i].set_ylabel(constant, fontsize=14)
+
+            if i == 1:
+                axes[i].legend(loc='upper right', fontsize=10, ncols=3)
+            else:
+                axes[i].legend().remove()
+
+        # Set the x-axis label for the bottom subplot
+        axes[-1].set_xlabel('DOY')
+
+        # Adjust the spacing between subplots
+        plt.tight_layout()
+
+        if save_graph:
+            fig.savefig(f'{self.wcm_fname}.png', dpi=800, bbox_inches='tight')
+
+        # Display the plot
+        plt.show()
+
+        return None
+
+    def list_to_str(self, lst_obj):
+        # check if list has one object
+        if len(lst_obj) == 1:
+            return str(lst_obj[0])
+        else:
+            return '_'.join(map(str, lst_obj))
 
     def wavenumber(self, freq):
         freq *= 1e9  # convert to Hz
         v = 299792458 * 1e2  # speed of light (cm/s)
         return (2 * np.pi * freq) / v
 
+    def dict_to_df(self, wcm_param):
+        
+        # Create a DataFrame from the angle_doy dictionary
+        df = pd.DataFrame(wcm_param).T
+        
+        # reset index inplace and rename it as CropType
+        df.index.name = 'CropType'
+        df.reset_index(inplace=True)
+
+        # melt df based on RISMA
+        df_melted = df.melt(id_vars=['CropType'], var_name='RISMA', value_name='constants')
+
+        # Expand df_melted base on constants column
+        df_melted = df_melted.join(df_melted['constants'].apply(pd.Series))
+
+        # drop constants
+        df_melted.drop(columns=['constants'], inplace=True)
+
+        # melt df based on depth (cm)
+        df_melted = df_melted.melt(id_vars=['CropType', 'RISMA'], var_name='depth (cm)', value_name='constants')
+
+        # Expand df_melted base on constants column
+        df_melted = df_melted.join(df_melted['constants'].apply(pd.Series))
+
+        # drop constants
+        df_melted.drop(columns=['constants'], inplace=True)
+
+        # melt df based on doy
+        df_melted = df_melted.melt(id_vars=['CropType', 'RISMA', 'depth (cm)'], var_name='doy', value_name='constants')
+
+        # Expand df_melted base on constants column
+        df_melted = df_melted.join(df_melted['constants'].apply(pd.Series))
+
+        # drop constants
+        df_melted.drop(columns=['constants'], inplace=True)
+        # df_melted.head()
+
+        # melt df based on angle
+        df_melted = df_melted.melt(id_vars=['CropType', 'RISMA', 'depth (cm)', 'doy'], var_name='angle (deg)', value_name='constants')
+
+        # Expand df_melted base on constants column
+        df_melted = df_melted.join(df_melted['constants'].apply(pd.Series))
+
+        df_melted['A'] = df_melted[0].apply(lambda x: x[0][0] if isinstance(x, list) else None)
+        df_melted['B'] = df_melted[0].apply(lambda x: x[0][1] if isinstance(x, list) else None)
+        df_melted['C'] = df_melted[0].apply(lambda x: x[1][0] if isinstance(x, list) else None)
+        df_melted['D'] = df_melted[0].apply(lambda x: x[1][1] if isinstance(x, list) else None)
+        df_melted['ssm'] = df_melted[1].apply(lambda x: x[0] if isinstance(x, list) else None)
+        df_melted['ssr'] = df_melted[1].apply(lambda x: x[1] if isinstance(x, list) else None)
+
+        df_melted.drop(columns=['constants', 0, 1], inplace=True)
+
+        return df_melted
+    
     def mergeDictionary(self, dict1, dict2):
         merged = dict2.copy()  # Start with a copy of the first dictionary
         for key, value in dict1.items():
