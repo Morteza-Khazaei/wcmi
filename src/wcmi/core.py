@@ -77,7 +77,7 @@ class VegParamCal:
         
         if save_as_csv:
             df.to_csv(f'{self.wcm_fname}.csv', index=False)
-            print(f'Saved WCM parameters df to {self.csv_fname}')
+            print(f'Saved WCM parameters df to {self.wcm_fname}.csv')
 
         return df
 
