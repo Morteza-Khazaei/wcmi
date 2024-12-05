@@ -87,7 +87,7 @@ class VegParamCal:
 
         # Loop through each constant and create a lineplot
         for i, constant in enumerate(param_to_plot):
-            sns.lineplot(ax=axes[i], x='doy', y=constant, hue=hue, style=style, palette=palette, data=df_melted, markers=markers, dashes=dashes)
+            sns.lineplot(ax=axes[i], x='doy', y=constant, hue=hue, style=style, palette=palette, data=df, markers=markers, dashes=dashes)
             axes[i].set_ylabel(constant, fontsize=14)
 
             if i == 1:
