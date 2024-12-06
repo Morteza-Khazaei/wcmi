@@ -64,7 +64,7 @@ class VegParamCal:
                         ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
                     wcm_soil_param_dp = self.cal_wcm_soil_param(
-                        df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, wcm_veg_param_doy=wcm_veg_param_dp)
+                        df_sigma=S1_sigma_df_ct, wcm_veg_param_doy=wcm_veg_param_dp)
                     
                     wcm_param_dp[dp] = self.mergeDictionary(wcm_veg_param_dp, wcm_soil_param_dp)
                     
@@ -472,7 +472,7 @@ class VegParamCal:
         
         return wcm_param_doy
 
-    def cal_wcm_soil_param(self, df_sigma, df_risma, wcm_veg_param_doy):
+    def cal_wcm_soil_param(self, df_sigma, wcm_veg_param_doy):
         wcm_param_doy = {}
 
         for lc, df_cluster in df_sigma.groupby('croptype'):
@@ -523,11 +523,13 @@ class VegParamCal:
                     
                     # Find the nearest integer
                     nearest_int_angle = round(angle)
+                    print(wcm_veg_param_doy[day_of_year][nearest_int_angle])
 
                     # extract Avv and Bvv
                     Avv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][0]
                     Bvv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][1]
                     ssr = wcm_veg_param_doy[day_of_year][nearest_int_angle][1][1]
+                    print(Avv, Bvv, ssr)
                     
                     # Degrees to Rad
                     theta_rad0 = np.deg2rad(angle)
