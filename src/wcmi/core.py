@@ -55,13 +55,18 @@ class VegParamCal:
 
                     if not default_wcm_params:
                         print(f'Calculate default wcm params for croptype: {ct}, station: {rst}, depth: {dp}')
-                        default_wcm_params = self.calculate_WCM_param(
+                        default_wcm_params = self.cal_wcm_veg_param(
                             df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
                             ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
-                    wcm_param_dp[dp] = self.calculate_WCM_param(
+                    wcm_veg_param_dp = self.cal_wcm_veg_param(
                         df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
                         ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
+                    
+                    wcm_soil_param_dp = self.cal_wcm_soil_param(
+                        df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, wcm_veg_param_doy=wcm_veg_param_dp)
+                    
+                    wcm_param_dp[dp] = self.mergeDictionary(wcm_veg_param_dp, wcm_soil_param_dp)
                     
                     # set default_wcm_params none
                     default_wcm_params = None
@@ -204,10 +209,10 @@ class VegParamCal:
         except:
             return [np.nan, np.nan]
     
-    def residuals(self, params, vv_obs, theta_rad, ndvi):
+    def residuals_local(self, params, vv_obs, theta_rad, vwc):
         A, B, mv, s = params
         ks = self.k * s
-        V1, V2 = ndvi, ndvi
+        V1, V2 = vwc, vwc
 
         # Oh et al. (2004) model
         o = Oh04(mv, ks, theta_rad)
@@ -219,7 +224,22 @@ class VegParamCal:
         vv_residual = np.square(vv_obs - vv_sim)
 
         return vv_residual
+    
+    def residuals_global(self, params, A, B, ks, vv_obs, theta_rad, vwc):
+        mv = params
+        V1, V2 = vwc, vwc
 
+        # Oh et al. (2004) model
+        o = Oh04(mv, ks, theta_rad)
+        vh_soil, vv_soil, hh_soil = o.get_sim()
+
+        # Water Cloud Model (WCM)
+        vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
+
+        vv_residual = np.square(vv_obs - vv_sim)
+
+        return vv_residual
+    
     def search_file(self, directory, extensions='csv', recursive=False, year_filter=None, station=None):
 
         if not os.path.isdir(directory):
@@ -320,7 +340,7 @@ class VegParamCal:
 
         return df
     
-    def calculate_WCM_param(self, df_sigma, df_risma, ssm_inv_thr, default_wcm_params, ssr_lt_36deg, ssr_gt_36deg):
+    def cal_wcm_veg_param(self, df_sigma, df_risma, ssm_inv_thr, default_wcm_params, ssr_lt_36deg, ssr_gt_36deg):
 
         wcm_param_doy = {}
 
@@ -390,14 +410,11 @@ class VegParamCal:
                         A_init = 1
                         B_init = 0.25
                         
-                    
                     else:
-                        # print(default_wcm_params[day_of_year][nearest_int_angle])
                         wcm_params = default_wcm_params[day_of_year][nearest_int_angle]
                         A_init, B_init = wcm_params[0][0]
                         # Cvv, Dvv = wcm_params[0][1]
                         ssm, ssr = wcm_params[1]
-
 
                     ssm_max = ssm + ssm_inv_thr
                     ssm_min = ssm - ssm_inv_thr
@@ -420,14 +437,10 @@ class VegParamCal:
                     initial_guess = [A_init, B_init, ssm, ssr]
 
                     # Perform the optimization
-                    # try:
-                    res = least_squares(self.residuals, initial_guess, args=(vv, theta_rad0, vwc), 
+                    res = least_squares(self.residuals_local, initial_guess, args=(vv, theta_rad0, vwc), 
                         bounds=([A_min, B_min, ssm_min, ssr_min], [A_max, B_max, ssm_max, ssr_max]))
                     A, B, mv, s = res.x
                     ks = self.k * s
-                    # except:
-                    #     A, B, mv, s = [np.nan, np.nan, np.nan, np.nan]
-                    #     ks = np.nan
 
                     # Oh et al. (2004) model
                     o = Oh04(mv, ks, theta_rad0)
@@ -456,6 +469,90 @@ class VegParamCal:
                 
                 merged_wcm_params = self.mergeDictionary(merged_angle_Avv_Bvv, merged_angle_Cvv_Dvv)
                 merged_wcm_params = self.mergeDictionary(merged_wcm_params, merged_angle_mvs_ssr)
+                
+                wcm_param_doy[day_of_year] = merged_wcm_params
+        
+        return wcm_param_doy
+
+    def cal_wcm_soil_param(self, df_sigma, df_risma, wcm_veg_param_doy):
+        wcm_param_doy = {}
+
+        for lc, df_cluster in df_sigma.groupby('croptype'):
+
+            # drop unnecessary columns
+            df_cluster = df_cluster.drop(['system:index', '.geo', 'croptype'], axis=1)
+            df_t = df_cluster.T
+            df_t.index.rename('date', inplace=True)
+            df_t.reset_index(inplace=True)
+
+            # Add new column named 'band' by using of _** from20200902T001505_VH
+            df_t['band'] = df_t['date'].apply(lambda x: x.split('_')[1])
+
+            # convert date to datetime by removing _** from20200902T001505_VH
+            df_t['date'] = pd.to_datetime(df_t['date'].apply(lambda x: x.split('_')[0][:8])).dt.strftime('%Y%m%d')
+
+            # Calculate mean of duplicate rows in df_t on numeric columns
+            df_t = df_t.groupby(['date', 'band']).mean().reset_index()
+
+            # Assuming you want to group the DataFrame 'df' in groups of three rows:
+            for g, df_c in df_t.groupby(np.arange(len(df_t)) // 4):
+
+                # Transpose to have four columns per day
+                df_ct = df_c.T
+
+                # Get date
+                date_string = list(set(df_ct.iloc[0].values))[0]
+                date_object = datetime.strptime(date_string, '%Y%m%d')
+                day_of_year = date_object.timetuple().tm_yday
+                print(f'Croptype: {lc}, date: {date_object}, doy: {day_of_year}')
+
+                # Use date as column names and drop first row
+                df_ct.columns = df_ct.iloc[1]
+                df_ct = df_ct[2:]
+                df_ct.reset_index(inplace=True, drop=True)
+
+                # Drop nodata
+                df_ct = df_ct[df_ct != 0].dropna()
+
+                if df_ct.shape[0] <= 30:
+                    continue
+                
+                # extract Avv and Bvv
+                Avv = wcm_veg_param_doy[day_of_year][0][0]
+                Bvv = wcm_veg_param_doy[day_of_year][0][1]
+                ssr = wcm_veg_param_doy[day_of_year][1][1]
+
+                categorized_angle_mvs = defaultdict(list)
+                categorized_angle_vv_soil = defaultdict(list)
+
+                for idx, row in df_ct.iterrows():
+                    vh, vv, angle, vwc = row.values
+                    
+                    # Find the nearest integer
+                    nearest_int_angle = round(angle)
+                    
+                    # Degrees to Rad
+                    theta_rad0 = np.deg2rad(angle)
+
+                    # Perform the optimization
+                    ks = self.k * ssr
+                    res = differential_evolution(self.residuals_global, bounds=[(0.01, 0.75), ], args=(Avv, Bvv, ks, vv, theta_rad0, vwc))
+                    mv = res.x
+
+                    # Oh et al. (2004) model
+                    o = Oh04(mv, ks, theta_rad0)
+                    vh_soil, vv_soil, hh_soil = o.get_sim()
+
+                    categorized_angle_mvs[nearest_int_angle].append(mv)
+                    categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
+
+                categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_mvs.items()))
+
+                merged_angle_vv_soils_mvs = self.mergeDictionary(categorized_angle_mvs, categorized_angle_vv_soil)
+                merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
+                    merged_angle_vv_soils_mvs.items()))
+                
+                merged_wcm_params = self.mergeDictionary(merged_angle_Cvv_Dvv, categorized_angle_mvs_mean)
                 
                 wcm_param_doy[day_of_year] = merged_wcm_params
         
