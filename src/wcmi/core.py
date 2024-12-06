@@ -542,7 +542,7 @@ class VegParamCal:
                     # Oh et al. (2004) model
                     o = Oh04(mv, ks, theta_rad0)
                     vh_soil, vv_soil, hh_soil = o.get_sim()
-                    print(mv, vh_soil, vv_soil, hh_soil)
+                    # print(mv, vh_soil, vv_soil, hh_soil)
 
                     categorized_angle_mvs[nearest_int_angle].append(mv)
                     categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
