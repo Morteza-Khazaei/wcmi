@@ -5,7 +5,7 @@ import seaborn as sns
 from datetime import datetime
 import matplotlib.pyplot as plt
 from collections import defaultdict
-from scipy.optimize import least_squares, curve_fit
+from scipy.optimize import differential_evolution, least_squares, curve_fit
 from sklearn.metrics import r2_score
 
 
