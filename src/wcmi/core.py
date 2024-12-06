@@ -22,7 +22,7 @@ class VegParamCal:
     def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=18, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
                  risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05, ssr_lt_36deg=0.8, ssr_gt_36deg=0.9):
         
-        self.wcm_fname = f'wcm_param_{self.list_to_str(aafc_croptype)}_{self.list_to_str(risma_station)}_{self.list_to_str(sensor_depth)}'
+        self.wcm_fname = f'wcm_param_{str(year)}_{self.list_to_str(aafc_croptype)}_{self.list_to_str(risma_station)}_{self.list_to_str(sensor_depth)}'
         
         self.k = self.wavenumber(S1_freq_GHz)
         
@@ -395,10 +395,10 @@ class VegParamCal:
                         ssm, ssr = wcm_params[1]
 
 
-                    max_ssm = ssm + ssm_inv_thr
-                    min_ssm = ssm - ssm_inv_thr
-                    if min_ssm < 0:
-                        min_ssm = 0
+                    ssm_max = ssm + ssm_inv_thr
+                    ssm_min = ssm - ssm_inv_thr
+                    if ssm_min < 0:
+                        ssm_min = 0
                     
                     ssr_min = 0
                     ssr_max = 5
@@ -416,14 +416,14 @@ class VegParamCal:
                     initial_guess = [A_init, B_init, ssm, ssr]
 
                     # Perform the optimization
-                    try:
-                        res = least_squares(self.residuals, initial_guess, args=(vv, theta_rad0, vwc), 
-                            bounds=([A_min, B_min, min_ssm, ssr_min], [A_max, B_max, max_ssm, ssr_max]))
-                        A, B, mv, s = res.x
-                        ks = self.k * s
-                    except:
-                        A, B, mv, s = [np.nan, np.nan, np.nan, np.nan]
-                        ks = np.nan
+                    # try:
+                    res = least_squares(self.residuals, initial_guess, args=(vv, theta_rad0, vwc), 
+                        bounds=([A_min, B_min, ssm_min, ssr_min], [A_max, B_max, ssm_max, ssr_max]))
+                    A, B, mv, s = res.x
+                    ks = self.k * s
+                    # except:
+                    #     A, B, mv, s = [np.nan, np.nan, np.nan, np.nan]
+                    #     ks = np.nan
 
                     # Oh et al. (2004) model
                     o = Oh04(mv, ks, theta_rad0)
