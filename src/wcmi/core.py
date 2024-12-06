@@ -299,6 +299,10 @@ class VegParamCal:
         df_melted.reset_index(inplace=True)
         df_melted.set_index('date', inplace=True)
 
+        # fill nan
+        df_melted.ffill(inplace=True)
+        df_melted.bfill(inplace=True)
+
         # drop Date inplace
         # df_melted.drop('Date', axis=1, inplace=True)
 
@@ -414,10 +418,6 @@ class VegParamCal:
 
                     # Initial guess for mv and ks
                     initial_guess = [A_init, B_init, ssm, ssr]
-                    print(f'minimum: {[A_min, B_min, ssm_min, ssr_min]}')
-                    print(f'initial: {[A_init, B_init, ssm, ssr]}')
-                    print(f'maximum: {[A_max, B_max, ssm_max, ssr_max]}')
-
 
                     # Perform the optimization
                     # try:
