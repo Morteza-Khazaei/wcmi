@@ -414,6 +414,10 @@ class VegParamCal:
 
                     # Initial guess for mv and ks
                     initial_guess = [A_init, B_init, ssm, ssr]
+                    print(f'minimum: {[A_min, B_min, ssm_min, ssr_min]}')
+                    print(f'initial: {[A_init, B_init, ssm, ssr]}')
+                    print(f'maximum: {[A_max, B_max, ssm_max, ssr_max]}')
+
 
                     # Perform the optimization
                     # try:
