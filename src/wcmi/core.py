@@ -391,10 +391,8 @@ class VegParamCal:
                 categorized_angle_vv_soil = defaultdict(list)
 
                 for idx, row in df_ct.iterrows():
-                    # print(row.values)
 
                     vh, vv, angle, vwc = row.values
-                    # print(vh, vv, angle, vwc)
 
                     nearest_int_angle = round(angle)  # Find the nearest integer
                     
@@ -527,7 +525,6 @@ class VegParamCal:
                     nearest_int_angle = round(angle)
 
                     # extract Avv and Bvv
-                    print(wcm_veg_param_doy[day_of_year][nearest_int_angle])
                     Avv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][0]
                     Bvv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][1]
                     ssr = wcm_veg_param_doy[day_of_year][nearest_int_angle][1][1]
