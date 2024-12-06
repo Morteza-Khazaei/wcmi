@@ -518,6 +518,7 @@ class VegParamCal:
                     continue
                 
                 # extract Avv and Bvv
+                print(wcm_veg_param_doy[day_of_year])
                 Avv = wcm_veg_param_doy[day_of_year][0][0]
                 Bvv = wcm_veg_param_doy[day_of_year][0][1]
                 ssr = wcm_veg_param_doy[day_of_year][1][1]
