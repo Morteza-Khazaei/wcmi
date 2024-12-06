@@ -523,13 +523,13 @@ class VegParamCal:
                     
                     # Find the nearest integer
                     nearest_int_angle = round(angle)
-                    print(wcm_veg_param_doy[day_of_year][nearest_int_angle])
+                    # print(wcm_veg_param_doy[day_of_year][nearest_int_angle])
 
                     # extract Avv and Bvv
                     Avv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][0]
                     Bvv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][1]
                     ssr = wcm_veg_param_doy[day_of_year][nearest_int_angle][1][1]
-                    print(Avv, Bvv, ssr)
+                    # print(Avv, Bvv, ssr)
                     
                     # Degrees to Rad
                     theta_rad0 = np.deg2rad(angle)
@@ -542,6 +542,7 @@ class VegParamCal:
                     # Oh et al. (2004) model
                     o = Oh04(mv, ks, theta_rad0)
                     vh_soil, vv_soil, hh_soil = o.get_sim()
+                    print(mv, vh_soil, vv_soil, hh_soil)
 
                     categorized_angle_mvs[nearest_int_angle].append(mv)
                     categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
