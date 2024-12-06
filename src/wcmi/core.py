@@ -221,7 +221,7 @@ class VegParamCal:
         # Water Cloud Model (WCM)
         vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
 
-        vv_residual = np.square(vv_obs - vv_sim)
+        vv_residual = np.sqrt(np.square(vv_obs - vv_sim))
 
         return vv_residual
     
@@ -236,7 +236,7 @@ class VegParamCal:
         # Water Cloud Model (WCM)
         vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
 
-        vv_residual = np.square(vv_obs - vv_sim)
+        vv_residual = np.sqrt(np.square(vv_obs - vv_sim))
 
         return vv_residual
     
@@ -537,7 +537,7 @@ class VegParamCal:
                     # Perform the optimization
                     ks = self.k * ssr
                     res = differential_evolution(self.residuals_global, bounds=[(0.01, 0.75), ], args=(Avv, Bvv, ks, vv, theta_rad0, vwc))
-                    mv = res.x
+                    mv = res.x[0]
 
                     # Oh et al. (2004) model
                     o = Oh04(mv, ks, theta_rad0)
