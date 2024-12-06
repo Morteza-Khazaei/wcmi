@@ -517,12 +517,6 @@ class VegParamCal:
                 if df_ct.shape[0] <= 30:
                     continue
                 
-                # extract Avv and Bvv
-                print(wcm_veg_param_doy[day_of_year])
-                Avv = wcm_veg_param_doy[day_of_year][0][0]
-                Bvv = wcm_veg_param_doy[day_of_year][0][1]
-                ssr = wcm_veg_param_doy[day_of_year][1][1]
-
                 categorized_angle_mvs = defaultdict(list)
                 categorized_angle_vv_soil = defaultdict(list)
 
@@ -531,6 +525,12 @@ class VegParamCal:
                     
                     # Find the nearest integer
                     nearest_int_angle = round(angle)
+
+                    # extract Avv and Bvv
+                    print(wcm_veg_param_doy[day_of_year][nearest_int_angle])
+                    Avv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][0]
+                    Bvv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][1]
+                    ssr = wcm_veg_param_doy[day_of_year][nearest_int_angle][1][1]
                     
                     # Degrees to Rad
                     theta_rad0 = np.deg2rad(angle)
