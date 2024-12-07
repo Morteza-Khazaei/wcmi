@@ -78,13 +78,13 @@ class VegParamCal:
 
     def run(self, save_as_csv=False):
 
-        df = self.dict_to_df(self.wcm_param_ct_st_dp)
+        # df = self.dict_to_df(self.wcm_param_ct_st_dp)
         
         if save_as_csv:
             df.to_csv(f'{self.wcm_fname}.csv', index=False)
             print(f'Saved WCM parameters df to {self.wcm_fname}.csv')
 
-        return df
+        return self.wcm_param_ct_st_dp
 
     def plot_wcm_param(self, df, param_to_plot=['A', 'B', 'C', 'D'], hue='angle (deg)', style='RISMA', palette='viridis', markers=True, dashes=False, save_graph=False):
         # Create a four-row, one-column grid of subplots
