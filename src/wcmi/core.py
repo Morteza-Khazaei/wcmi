@@ -59,14 +59,9 @@ class VegParamCal:
                             df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
                             ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
-                    wcm_veg_param_dp = self.cal_wcm_veg_param(
+                    wcm_param_dp[dp] = self.cal_wcm_veg_param(
                         df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
                         ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
-                    
-                    wcm_soil_param_dp = self.cal_wcm_soil_param(
-                        df_sigma=S1_sigma_df_ct, wcm_veg_param_doy=wcm_veg_param_dp)
-                    
-                    wcm_param_dp[dp] = self.mergeDictionary(wcm_veg_param_dp, wcm_soil_param_dp)
                     
                     # set default_wcm_params none
                     default_wcm_params = None
@@ -472,7 +467,7 @@ class VegParamCal:
         
         return wcm_param_doy
 
-    def cal_wcm_soil_param(self, df_sigma, wcm_veg_param_doy):
+    def cal_wcm_soil_param(self, df_sigma, wcm_veg_param_df):
         wcm_param_doy = {}
 
         for lc, df_cluster in df_sigma.groupby('croptype'):
@@ -526,9 +521,12 @@ class VegParamCal:
                     # print(wcm_veg_param_doy[day_of_year][nearest_int_angle])
 
                     # extract Avv and Bvv
-                    Avv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][0]
-                    Bvv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][1]
-                    ssr = wcm_veg_param_doy[day_of_year][nearest_int_angle][1][1]
+                    Avv = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].Avv.values[0]
+                    Bvv = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].Bvv.values[0]
+                    ssr = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].ssr.values[0]
+                    # Avv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][0]
+                    # Bvv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][1]
+                    # ssr = wcm_veg_param_doy[day_of_year][nearest_int_angle][1][1]
                     # print(Avv, Bvv, ssr)
                     
                     # Degrees to Rad
