@@ -67,7 +67,7 @@ class VegParamCal:
                     default_wcm_params = None
                 
                 wcm_veg_param_ct[rst] = wcm_veg_param_dp
-            self.wcm_veg_param_ct_st_dp[ct] = wcm_param_ct
+            self.wcm_veg_param_ct_st_dp[ct] = wcm_veg_param_ct
 
         return None
 
