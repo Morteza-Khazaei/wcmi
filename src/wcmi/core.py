@@ -51,16 +51,16 @@ class VegParamCal:
                     # read risma bulk csv
                     df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=S1_local_overpass_time, depth=dp)
                     # read radar backscatter csv
-                    S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=ct)
+                    self.S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=ct)
 
                     if not default_wcm_params:
                         print(f'Calculate default wcm params for croptype: {ct}, station: {rst}, depth: {dp}')
                         default_wcm_params = self.cal_wcm_veg_param(
-                            df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
+                            df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
                             ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
                     wcm_param_dp[dp] = self.cal_wcm_veg_param(
-                        df_sigma=S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
+                        df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
                         ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
                     # set default_wcm_params none
@@ -467,10 +467,10 @@ class VegParamCal:
         
         return wcm_param_doy
 
-    def cal_wcm_soil_param(self, df_sigma, wcm_veg_param_df):
+    def cal_wcm_soil_param(self, wcm_veg_param_df):
         wcm_param_doy = {}
 
-        for lc, df_cluster in df_sigma.groupby('croptype'):
+        for lc, df_cluster in self.S1_sigma_df_ct.groupby('croptype'):
 
             # drop unnecessary columns
             df_cluster = df_cluster.drop(['system:index', '.geo', 'croptype'], axis=1)
