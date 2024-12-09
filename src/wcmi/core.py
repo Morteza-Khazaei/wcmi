@@ -74,7 +74,15 @@ class VegParamCal:
     def cal_wcm_params(self, save_as_csv=False):
 
         wcm_veg_param_df = self.dict_to_df_veg(self.wcm_veg_param_ct_st_dp)
-        wcm_soil_param_dict = self.cal_wcm_soil_param(wcm_veg_param_df)
+
+        mean_wcm_veg_param_df = wcm_veg_param_df.groupby(['doy', 'angle (deg)'])[['Avv', 'Bvv', 'Cvv', 'Dvv', 'ssm', 'ssr']].agg(['mean', ])
+        mean_wcm_veg_param_df.columns = ['_'.join(col) for col in mean_wcm_veg_param_df.columns.values]
+        mean_wcm_veg_param_df.rename(columns={'Avv_mean': 'Avv', 'Bvv_mean': 'Bvv', 'Cvv_mean': 'Cvv', 'Dvv_mean': 'Dvv', 'ssm_mean': 'ssm', 'ssr_mean': 'ssr'}, inplace=True)
+        mean_wcm_veg_param_df.reset_index(inplace=True)
+
+        mean_wcm_veg_param_df['angle'] = mean_wcm_veg_param_df['angle (deg)'].astype(int)
+        
+        wcm_soil_param_dict = self.cal_wcm_soil_param(mean_wcm_veg_param_df)
         wcm_soil_param_df = self.dict_to_df_soil(wcm_soil_param_dict)
 
         
