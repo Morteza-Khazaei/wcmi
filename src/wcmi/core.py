@@ -19,7 +19,7 @@ from .core import *
 
 class VegParamCal:
 
-    def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=18, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
+    def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=19, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
                  risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05, ssr_lt_36deg=0.8, ssr_gt_36deg=0.9):
         
         self.wcm_fname = f'wcm_param_{str(year)}_{self.list_to_str(aafc_croptype)}_{self.list_to_str(risma_station)}_{self.list_to_str(sensor_depth)}'
@@ -39,12 +39,12 @@ class VegParamCal:
         backscatter_files = self.search_file(backscatter_dir, year_filter=year)
 
         # filter risma csv files based on risma_station
-        self.wcm_param_ct_st_dp = {}
+        self.wcm_veg_param_ct_st_dp = {}
         for ct in aafc_croptype:
-            wcm_param_ct = {}
+            wcm_veg_param_ct = {}
             for rst in risma_station:
                 risma_files = self.search_file(risma_dir, year_filter=year, station=rst)
-                wcm_param_dp = {}
+                wcm_veg_param_dp = {}
                 default_wcm_params = None
                 for dp in sensor_depth:
                     print(f'Croptype: {ct}, Station: {rst}, Depth: {dp}')
@@ -59,27 +59,32 @@ class VegParamCal:
                             df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
                             ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
-                    wcm_param_dp[dp] = self.cal_wcm_veg_param(
+                    wcm_veg_param_dp[dp] = self.cal_wcm_veg_param(
                         df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
                         ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
                     
                     # set default_wcm_params none
                     default_wcm_params = None
                 
-                wcm_param_ct[rst] = wcm_param_dp
-            self.wcm_param_ct_st_dp[ct] = wcm_param_ct
+                wcm_veg_param_ct[rst] = wcm_veg_param_dp
+            self.wcm_veg_param_ct_st_dp[ct] = wcm_param_ct
 
         return None
 
-    def run(self, save_as_csv=False):
+    def cal_wcm_params(self, save_as_csv=False):
 
-        df = self.dict_to_df(self.wcm_param_ct_st_dp)
+        wcm_veg_param_df = self.dict_to_df_veg(self.wcm_veg_param_ct_st_dp)
+        wcm_soil_param_dict = self.cal_wcm_soil_param(wcm_veg_param_df)
+        wcm_soil_param_df = self.dict_to_df_soil(wcm_soil_param_dict)
+
         
         if save_as_csv:
-            df.to_csv(f'{self.wcm_fname}.csv', index=False)
-            print(f'Saved WCM parameters df to {self.wcm_fname}.csv')
+            wcm_veg_param_df.to_csv(f'{self.wcm_fname}_veg.csv', index=False)
+            wcm_soil_param_df.to_csv(f'{self.wcm_fname}_soil.csv', index=False)
+            print(f'Saved WCM parameters df to {self.wcm_fname}_veg.csv')
+            print(f'Saved WCM parameters df to {self.wcm_fname}_soil.csv')
 
-        return df
+        return wcm_veg_param_df, wcm_soil_param_df
 
     def plot_wcm_param(self, df, param_to_plot=['A', 'B', 'C', 'D'], hue='angle (deg)', style='RISMA', palette='viridis', markers=True, dashes=False, save_graph=False):
         # Create a four-row, one-column grid of subplots
@@ -121,7 +126,7 @@ class VegParamCal:
         v = 299792458 * 1e2  # speed of light (cm/s)
         return (2 * np.pi * freq) / v
 
-    def dict_to_df(self, wcm_param):
+    def dict_to_df_veg(self, wcm_param):
         
         # Create a DataFrame from the angle_doy dictionary
         df = pd.DataFrame(wcm_param).T
@@ -164,17 +169,48 @@ class VegParamCal:
         # Expand df_melted base on constants column
         df_melted = df_melted.join(df_melted['constants'].apply(pd.Series))
 
-        df_melted['A'] = df_melted[0].apply(lambda x: x[0][0] if isinstance(x, list) else None)
-        df_melted['B'] = df_melted[0].apply(lambda x: x[0][1] if isinstance(x, list) else None)
-        df_melted['C'] = df_melted[0].apply(lambda x: x[1][0] if isinstance(x, list) else None)
-        df_melted['D'] = df_melted[0].apply(lambda x: x[1][1] if isinstance(x, list) else None)
+        df_melted['Avv'] = df_melted[0].apply(lambda x: x[0][0] if isinstance(x, list) else None)
+        df_melted['Bvv'] = df_melted[0].apply(lambda x: x[0][1] if isinstance(x, list) else None)
+        df_melted['Cvv'] = df_melted[0].apply(lambda x: x[1][0] if isinstance(x, list) else None)
+        df_melted['Dvv'] = df_melted[0].apply(lambda x: x[1][1] if isinstance(x, list) else None)
         df_melted['ssm'] = df_melted[1].apply(lambda x: x[0] if isinstance(x, list) else None)
         df_melted['ssr'] = df_melted[1].apply(lambda x: x[1] if isinstance(x, list) else None)
 
         df_melted.drop(columns=['constants', 0, 1], inplace=True)
 
+        df_melted['angle'] = df_melted['angle (deg)'].astype(int)
+
         return df_melted
     
+    def dict_to_df_soil(self, wcm_soil_param_df):
+        
+        # Create a DataFrame from the angle_doy dictionary
+        df = pd.DataFrame(wcm_soil_param_df).T
+        
+        # reset index inplace and rename it as doy
+        df.index.name = 'doy'
+        df.reset_index(inplace=True)
+
+        # use melt to extract A, B, C, and D fom df
+        df_melted = df.melt(id_vars=['doy', ], var_name='angle (deg)', value_name='constants')
+
+        # Expand df_melted base on constants column
+        df_melted = df_melted.join(df_melted['constants'].apply(pd.Series))
+
+        # drop constants
+        df_melted.drop(columns=['constants'], inplace=True)
+
+        # Extract wcm soil params
+        df_melted['Cvv'] = df_melted[0].apply(lambda x: x[0] if isinstance(x, list) else None)
+        df_melted['Dvv'] = df_melted[0].apply(lambda x: x[1] if isinstance(x, list) else None)
+        df_melted['ssm'] = df_melted[1]
+
+        df_melted['angle'] = df_melted['angle (deg)'].astype(int)
+
+        df_melted.drop(columns=[0, 1], inplace=True)
+
+        return df_melted
+
     def mergeDictionary(self, dict1, dict2):
         merged = dict2.copy()  # Start with a copy of the first dictionary
         for key, value in dict1.items():
@@ -471,7 +507,7 @@ class VegParamCal:
         wcm_param_doy = {}
 
         for lc, df_cluster in self.S1_sigma_df_ct.groupby('croptype'):
-
+ 
             # drop unnecessary columns
             df_cluster = df_cluster.drop(['system:index', '.geo', 'croptype'], axis=1)
             df_t = df_cluster.T
