@@ -20,11 +20,12 @@ from .core import *
 class VegParamCal:
 
     def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=19, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
-                 risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05, ssr_lt_36deg=0.8, ssr_gt_36deg=0.9):
+                 risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05, ssr_lt_36deg=0.8, ssr_gt_36deg=0.9, agg_opr='mean'):
         
         self.wcm_fname = f'wcm_param_{str(year)}_{self.list_to_str(aafc_croptype)}_{self.list_to_str(risma_station)}_{self.list_to_str(sensor_depth)}'
         
         self.k = self.wavenumber(S1_freq_GHz)
+        self.agg_opr = agg_opr
         
         if not dir_radar_sigma:
             backscatter_dir = 'datasets/backscatter'
@@ -75,9 +76,15 @@ class VegParamCal:
 
         wcm_veg_param_df = self.dict_to_df_veg(self.wcm_veg_param_ct_st_dp)
 
-        mean_wcm_veg_param_df = wcm_veg_param_df.groupby(['doy', 'angle (deg)'])[['Avv', 'Bvv', 'Cvv', 'Dvv', 'ssm', 'ssr']].agg(['mean', ])
+        mean_wcm_veg_param_df = wcm_veg_param_df.groupby(['doy', 'angle (deg)'])[['Avv', 'Bvv', 'Cvv', 'Dvv', 'ssm', 'ssr']].agg([self.agg_opr, ])
         mean_wcm_veg_param_df.columns = ['_'.join(col) for col in mean_wcm_veg_param_df.columns.values]
-        mean_wcm_veg_param_df.rename(columns={'Avv_mean': 'Avv', 'Bvv_mean': 'Bvv', 'Cvv_mean': 'Cvv', 'Dvv_mean': 'Dvv', 'ssm_mean': 'ssm', 'ssr_mean': 'ssr'}, inplace=True)
+        mean_wcm_veg_param_df.rename(columns={
+            f'Avv_{self.agg_opr}': 'Avv', 
+            f'Bvv_{self.agg_opr}': 'Bvv', 
+            f'Cvv_{self.agg_opr}': 'Cvv', 
+            f'Dvv_{self.agg_opr}': 'Dvv', 
+            f'ssm_{self.agg_opr}': 'ssm', 
+            f'ssr_{self.agg_opr}': 'ssr'}, inplace=True)
         mean_wcm_veg_param_df.reset_index(inplace=True)
 
         mean_wcm_veg_param_df['angle'] = mean_wcm_veg_param_df['angle (deg)'].astype(int)
