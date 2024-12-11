@@ -24,82 +24,73 @@ class VegParamCal:
         
         self.wcm_fname = f'wcm_param_{str(year)}_{self.list_to_str(aafc_croptype)}_{self.list_to_str(risma_station)}_{self.list_to_str(sensor_depth)}'
         
+        self.year = year
+        self.aafc_croptype = aafc_croptype
+        self.risma_station = risma_station
+        self.sensor_depth = sensor_depth
+        self.S1_local_overpass_time = S1_local_overpass_time
+        self.ssm_inv_thr = ssm_inv_thr
+        self.ssr_lt_36deg = ssr_lt_36deg
+        self.ssr_gt_36deg = ssr_gt_36deg
+
         self.k = self.wavenumber(S1_freq_GHz)
         self.agg_opr = agg_opr
         
         if not dir_radar_sigma:
-            backscatter_dir = 'datasets/backscatter'
+            self.backscatter_dir = 'datasets/backscatter'
         else:
-            backscatter_dir = dir_radar_sigma
+            self.backscatter_dir = dir_radar_sigma
         
         if not dir_risma:
-            risma_dir = 'datasets/RISMA'
+            self.risma_dir = 'datasets/RISMA'
         else:
-            risma_dir = dir_risma
+            self.risma_dir = dir_risma
         
-        backscatter_files = self.search_file(backscatter_dir, year_filter=year)
+        return None
+
+    def cal_wcm_veg_param(self, ):
+        
+        # find S1 backscatter csv file
+        backscatter_files = self.search_file(self.backscatter_dir, year_filter=self.year)
 
         # filter risma csv files based on risma_station
-        self.wcm_veg_param_ct_st_dp = {}
-        for ct in aafc_croptype:
+        wcm_veg_param_ct_st_dp = {}
+        for ct in self.aafc_croptype:
             wcm_veg_param_ct = {}
-            for rst in risma_station:
-                risma_files = self.search_file(risma_dir, year_filter=year, station=rst)
+            for rst in self.risma_station:
+                risma_files = self.search_file(self.risma_dir, year_filter=self.year, station=rst)
                 wcm_veg_param_dp = {}
                 default_wcm_params = None
-                for dp in sensor_depth:
+                for dp in self.sensor_depth:
                     print(f'Croptype: {ct}, Station: {rst}, Depth: {dp}')
                     # read risma bulk csv
-                    df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=S1_local_overpass_time, depth=dp)
+                    df_doy_depth = self.read_risma_bulk_csv(risma_files[0], S1_lot=self.S1_local_overpass_time, depth=dp)
                     # read radar backscatter csv
                     self.S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=ct)
 
                     if not default_wcm_params:
                         print(f'Calculate default wcm params for croptype: {ct}, station: {rst}, depth: {dp}')
-                        default_wcm_params = self.cal_wcm_veg_param(
-                            df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
-                            ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
+                        default_wcm_params = self.inverse_wcm_veg_param(
+                            df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
+                            ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
                     
-                    wcm_veg_param_dp[dp] = self.cal_wcm_veg_param(
-                        df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=ssm_inv_thr, default_wcm_params=default_wcm_params, 
-                        ssr_lt_36deg=ssr_lt_36deg, ssr_gt_36deg=ssr_gt_36deg)
+                    wcm_veg_param_dp[dp] = self.inverse_wcm_veg_param(
+                        df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
+                        ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
                     
                     # set default_wcm_params none
                     default_wcm_params = None
                 
                 wcm_veg_param_ct[rst] = wcm_veg_param_dp
-            self.wcm_veg_param_ct_st_dp[ct] = wcm_veg_param_ct
-
-        return None
-
-    def cal_wcm_params(self, save_as_csv=False):
-
-        wcm_veg_param_df = self.dict_to_df_veg(self.wcm_veg_param_ct_st_dp)
-
-        mean_wcm_veg_param_df = wcm_veg_param_df.groupby(['doy', 'angle (deg)'])[['Avv', 'Bvv', 'Cvv', 'Dvv', 'ssm', 'ssr']].agg([self.agg_opr, ])
-        mean_wcm_veg_param_df.columns = ['_'.join(col) for col in mean_wcm_veg_param_df.columns.values]
-        mean_wcm_veg_param_df.rename(columns={
-            f'Avv_{self.agg_opr}': 'Avv', 
-            f'Bvv_{self.agg_opr}': 'Bvv', 
-            f'Cvv_{self.agg_opr}': 'Cvv', 
-            f'Dvv_{self.agg_opr}': 'Dvv', 
-            f'ssm_{self.agg_opr}': 'ssm', 
-            f'ssr_{self.agg_opr}': 'ssr'}, inplace=True)
-        mean_wcm_veg_param_df.reset_index(inplace=True)
-
-        mean_wcm_veg_param_df['angle'] = mean_wcm_veg_param_df['angle (deg)'].astype(int)
+            wcm_veg_param_ct_st_dp[ct] = wcm_veg_param_ct
         
-        wcm_soil_param_dict = self.cal_wcm_soil_param(mean_wcm_veg_param_df)
-        wcm_soil_param_df = self.dict_to_df_soil(wcm_soil_param_dict)
+        return wcm_veg_param_ct_st_dp
+    
+    def cal_wcm_soil_param(self, wcm_veg_param_df):
 
-        
-        if save_as_csv:
-            wcm_veg_param_df.to_csv(f'{self.wcm_fname}_veg.csv', index=False)
-            wcm_soil_param_df.to_csv(f'{self.wcm_fname}_soil.csv', index=False)
-            print(f'Saved WCM parameters df to {self.wcm_fname}_veg.csv')
-            print(f'Saved WCM parameters df to {self.wcm_fname}_soil.csv')
+        wcm_soil_param_dict = self.inverse_wcm_soil_param(wcm_veg_param_df)
 
-        return wcm_veg_param_df, wcm_soil_param_df
+        return wcm_soil_param_dict
 
     def plot_wcm_param(self, df, param_to_plot=['A', 'B', 'C', 'D'], hue='angle (deg)', style='RISMA', palette='viridis', markers=True, dashes=False, save_graph=False):
         # Create a four-row, one-column grid of subplots
@@ -386,7 +377,7 @@ class VegParamCal:
 
         return df
     
-    def cal_wcm_veg_param(self, df_sigma, df_risma, ssm_inv_thr, default_wcm_params, ssr_lt_36deg, ssr_gt_36deg):
+    def inverse_wcm_veg_param(self, df_sigma, df_risma, ssm_inv_thr, default_wcm_params, ssr_lt_36deg, ssr_gt_36deg):
 
         wcm_param_doy = {}
 
@@ -518,7 +509,7 @@ class VegParamCal:
         
         return wcm_param_doy
 
-    def cal_wcm_soil_param(self, wcm_veg_param_df):
+    def inverse_wcm_soil_param(self, wcm_veg_param_df):
         wcm_param_doy = {}
 
         for lc, df_cluster in self.S1_sigma_df_ct.groupby('croptype'):
@@ -575,9 +566,6 @@ class VegParamCal:
                     Avv = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].Avv.values[0]
                     Bvv = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].Bvv.values[0]
                     ssr = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].ssr.values[0]
-                    # Avv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][0]
-                    # Bvv = wcm_veg_param_doy[day_of_year][nearest_int_angle][0][0][1]
-                    # ssr = wcm_veg_param_doy[day_of_year][nearest_int_angle][1][1]
                     # print(Avv, Bvv, ssr)
                     
                     # Degrees to Rad
