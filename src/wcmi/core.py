@@ -5,7 +5,6 @@ import seaborn as sns
 from datetime import datetime
 import matplotlib.pyplot as plt
 from collections import defaultdict
-from scipy.stats import linregress
 from scipy.optimize import differential_evolution, least_squares, curve_fit
 from sklearn.metrics import r2_score
 
@@ -247,11 +246,11 @@ class VegParamCal:
             # Calculate the R-squared value
             y_pred = exp_func(x_arr, Cvv, Dvv)
             
-            # Calculate the regression line for the ssm
-            ssm_fit = linregress(y_pred, x_arr)
+            # calculate r-squared
+            r2 = r2_score(y_arr, y_pred)
             
             # Print the R-squared value
-            print(f'R2: {ssm_fit.rvalue**2:.3f}')
+            print(f'R2: {r2:.3f}')
             
             return [Cvv, Dvv]
             
