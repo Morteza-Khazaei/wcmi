@@ -238,17 +238,17 @@ class VegParamCal:
         y_arr = np.array(y_arr)
         
         def exp_func(x, c, d):
-            return c * np.log(d * x + 1e-9) #add a small value to avoid log(0)
+            return c * np.log(d * x)
         
         try:
             params, covariance = curve_fit(exp_func, x_arr, y_arr)
             Cvv, Dvv = params
 
             # Calculate the R-squared value
-            y_pred = exp_func(x_mv, Cvv, Dvv)
+            y_pred = exp_func(x_arr, Cvv, Dvv)
             
-            # Calculate the regression line for the imaginary part
-            ssm_fit = linregress(y_pred, x)
+            # Calculate the regression line for the ssm
+            ssm_fit = linregress(y_pred, x_arr)
             
             # Print the R-squared value
             print(f'R2: {ssm_fit.rvalue**2:.3f}')
