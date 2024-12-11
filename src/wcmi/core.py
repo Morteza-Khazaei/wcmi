@@ -5,6 +5,7 @@ import seaborn as sns
 from datetime import datetime
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from scipy.stats import linregress
 from scipy.optimize import differential_evolution, least_squares, curve_fit
 from sklearn.metrics import r2_score
 
@@ -242,7 +243,18 @@ class VegParamCal:
         try:
             params, covariance = curve_fit(exp_func, x_arr, y_arr)
             Cvv, Dvv = params
+
+            # Calculate the R-squared value
+            y_pred = exp_func(x_mv, Cvv, Dvv)
+            
+            # Calculate the regression line for the imaginary part
+            ssm_fit = linregress(y_pred, x)
+            
+            # Print the R-squared value
+            print(f'R2: {ssm_fit.rvalue**2:.3f}')
+            
             return [Cvv, Dvv]
+            
         except:
             return [np.nan, np.nan]
     
