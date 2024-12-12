@@ -349,7 +349,7 @@ class VegParamCal:
         oh_af_overpass_time = overpass_time + timedelta(hours=1)
 
         # Keep rows around -1 and +1 overpass_time based on time index in the df
-        df = df[(df.index.time >= oh_bf_overpass_time) & (df.index.time <= oh_af_overpass_time)]
+        df = df[(df.index.time >= oh_bf_overpass_time.time()) & (df.index.time <= oh_af_overpass_time.time())]
 
         # filter df's columns contain 'Soil water content'
         df = df[[col for col in df.columns if 'Soil water content' in col]]
