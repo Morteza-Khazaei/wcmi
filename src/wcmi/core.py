@@ -20,7 +20,7 @@ from .core import *
 class VegParamCal:
 
     def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=19, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
-                 risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05, ssr_lt_36deg=0.8, ssr_gt_36deg=0.9, agg_opr='mean'):
+                 risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05, ssr_lt_36deg=0.8, ssr_gt_36deg=0.9, agg_opr='mean', iter=3):
         
         self.wcm_fname = f'wcm_param_{str(year)}_{self.list_to_str(aafc_croptype)}_{self.list_to_str(risma_station)}_{self.list_to_str(sensor_depth)}'
         
@@ -32,6 +32,7 @@ class VegParamCal:
         self.ssm_inv_thr = ssm_inv_thr
         self.ssr_lt_36deg = ssr_lt_36deg
         self.ssr_gt_36deg = ssr_gt_36deg
+        self.iter = iter
 
         self.k = self.wavenumber(S1_freq_GHz)
         self.agg_opr = agg_opr
@@ -76,7 +77,7 @@ class VegParamCal:
                     
                     # do while loop for 3 times on default_wcm_params to reach better accuracies in wcm veg params
                     n = 0
-                    while n < 3:
+                    while n < self.iter:
                         # print a report about each loop
                         print(f'Loop number: {n}')
                         default_wcm_params = self.inverse_wcm_veg_param(
@@ -84,9 +85,7 @@ class VegParamCal:
                             ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
                         n += 1
                     
-                    wcm_veg_param_dp[dp] = self.inverse_wcm_veg_param(
-                        df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
-                        ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
+                    wcm_veg_param_dp[dp] = default_wcm_params
                     
                     # set default_wcm_params none
                     default_wcm_params = None
