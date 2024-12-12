@@ -74,6 +74,16 @@ class VegParamCal:
                             df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
                             ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
                     
+                    # do while loop for 3 times on default_wcm_params to reach better accuracies in wcm veg params
+                    n = 0
+                    while n < 3:
+                        # print a report about each loop
+                        print(f'Loop number: {n}')
+                        default_wcm_params = self.inverse_wcm_veg_param(
+                            df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
+                            ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
+                        n += 1
+                    
                     wcm_veg_param_dp[dp] = self.inverse_wcm_veg_param(
                         df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
                         ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
