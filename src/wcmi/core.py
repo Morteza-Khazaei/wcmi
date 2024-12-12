@@ -19,7 +19,7 @@ from .core import *
 
 class VegParamCal:
 
-    def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time=19, year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
+    def __init__(self, S1_freq_GHz=5.405, S1_local_overpass_time='18:30', year=2020, dir_radar_sigma=None, dir_risma=None, aafc_croptype=[158,], 
                  risma_station=['MB5',], sensor_depth=[0, 5,], ssm_inv_thr=0.05, ssr_lt_36deg=0.8, ssr_gt_36deg=0.9, agg_opr='mean', iter=3):
         
         self.wcm_fname = f'wcm_param_{str(year)}_{self.list_to_str(aafc_croptype)}_{self.list_to_str(risma_station)}_{self.list_to_str(sensor_depth)}'
@@ -343,8 +343,13 @@ class VegParamCal:
         # remove first part of the columns name
         df.columns = [col.split('.')[1] for col in df.columns]
 
-        # Keep rows around -1 and +1 06:00 pm based on index in the df
-        df = df[(df.index.strftime('%H:%M') >= f'{S1_lot - 1}:00') & (df.index.strftime('%H:%M') <= f'{S1_lot + 1}:00')]
+        # create a date object from 18:30
+        overpass_time = datetime.strptime(S1_lot, '%H:%M')
+        oh_bf_overpass_time = overpass_time - datetime.timedelta(hours=1)
+        oh_af_overpass_time = overpass_time + datetime.timedelta(hours=1)
+
+        # Keep rows around -1 and +1 overpass_time based on time index in the df
+        df = df[(df.index.time >= oh_bf_overpass_time) & (df.index.time <= oh_af_overpass_time)]
 
         # filter df's columns contain 'Soil water content'
         df = df[[col for col in df.columns if 'Soil water content' in col]]
