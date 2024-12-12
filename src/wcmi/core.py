@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from datetime import datetime
+from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from scipy.optimize import differential_evolution, least_squares, curve_fit
@@ -345,8 +345,8 @@ class VegParamCal:
 
         # create a date object from 18:30
         overpass_time = datetime.strptime(S1_lot, '%H:%M')
-        oh_bf_overpass_time = overpass_time - datetime.timedelta(hours=1)
-        oh_af_overpass_time = overpass_time + datetime.timedelta(hours=1)
+        oh_bf_overpass_time = overpass_time - timedelta(hours=1)
+        oh_af_overpass_time = overpass_time + timedelta(hours=1)
 
         # Keep rows around -1 and +1 overpass_time based on time index in the df
         df = df[(df.index.time >= oh_bf_overpass_time) & (df.index.time <= oh_af_overpass_time)]
