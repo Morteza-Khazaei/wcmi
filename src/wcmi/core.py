@@ -516,10 +516,10 @@ class VegParamCal:
                     categorized_angle_ssr[nearest_int_angle].append(s)
                     categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
 
-                categorized_angle_Avv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Avv.items()))
-                categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_Bvv.items()))
-                categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_mvs.items()))
-                categorized_angle_ssr_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_ssr.items()))
+                categorized_angle_Avv_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_Avv.items()))
+                categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_Bvv.items()))
+                categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_mvs.items()))
+                categorized_angle_ssr_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_ssr.items()))
                 merged_angle_Avv_Bvv = self.mergeDictionary(categorized_angle_Avv_mean, categorized_angle_Bvv_mean)
                 merged_angle_mvs_ssr = self.mergeDictionary(categorized_angle_mvs_mean, categorized_angle_ssr_mean)
 
@@ -585,7 +585,6 @@ class VegParamCal:
                     
                     # Find the nearest integer
                     nearest_int_angle = round(angle)
-                    # print(wcm_veg_param_doy[day_of_year][nearest_int_angle])
 
                     # extract Avv and Bvv
                     Avv = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].Avv.values[0]
@@ -609,7 +608,7 @@ class VegParamCal:
                     categorized_angle_mvs[nearest_int_angle].append(mv)
                     categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
 
-                categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.array(el[1]).mean()), categorized_angle_mvs.items()))
+                categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_mvs.items()))
 
                 merged_angle_vv_soils_mvs = self.mergeDictionary(categorized_angle_mvs, categorized_angle_vv_soil)
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
