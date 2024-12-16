@@ -237,26 +237,32 @@ class VegParamCal:
     def to_dB(self, power):
         return 10*np.log10(power)
     
-    def curve_fit_Cvv_Dvv(self, x_arr, y_arr):
-        x_arr = np.array(x_arr)
-        y_arr = np.array(y_arr)
+    def curve_fit_Cvv_Dvv(self, ssm, ssr, vv_soil):
+        x_arr_ssm = np.array(ssm)
+        x_arr_ssr = np.array(ssr)
+        x_arr = (x_arr_ssm, x_arr_ssr)
 
-        def exp_func(x, c, d):
-            return c * np.log(d * x)
+        y_arr = np.array(vv_soil)
+
+        def exp_func(X, c, d, e, f, g):
+            ssm, ssr = X
+            # Calculate the exponential function
+            return c * np.log(ssm * d) + e * log(ssr * f) + g
         
         try:
             params, covariance = curve_fit(exp_func, x_arr, y_arr)
-            Cvv, Dvv = params
+            Cvv, Dvv, Evv, Fvv, Gvv = params
 
             # Calculate the R-squared value
-            y_pred = exp_func(x_arr, Cvv, Dvv)
+            y_pred = exp_func(x_arr, Cvv, Dvv, Evv, Fvv, Gvv)
 
             # Convert x_data and y_fit to a pandas DataFrame
-            data_for_lineplot = pd.DataFrame({'x': x_arr, 'y': y_pred})
+            data_for_lineplot = pd.DataFrame({'ssm': x_arr_ssm, 'ssr': x_arr_ssr, 'sigma_vv': y_pred})
 
             # Now use the DataFrame in sns.lineplot
-            sns.scatterplot(x=x_arr, y=y_arr)
-            sns.lineplot(data=data_for_lineplot, x='x', y='y', color='red', label='Fitted Exponential Curve')
+            sns.scatterplot(x=x_arr_ssm, y=y_arr, color='blue', label='SSM')
+            sns.scatterplot(x=x_arr_ssr, y=y_arr, color='red', label='SSR')
+            sns.lineplot(data=data_for_lineplot, x='ssm', y='sigma_vv', color='red', label='Fitted Exponential Curve')
             plt.show()
             
             # calculate r-squared
@@ -265,10 +271,10 @@ class VegParamCal:
             # Print the R-squared value
             print(f'R2: {r2:.3f}')
 
-            return [Cvv, Dvv]
+            return [Cvv, Dvv, Evv, Fvv, Gvv]
             
         except:
-            return [np.nan, np.nan]
+            return [np.nan, np.nan, np.nan, np.nan, np.nan]
     
     def residuals_local(self, params, vv_obs, theta_rad, vwc):
         A, B, mv, s = params
@@ -523,9 +529,9 @@ class VegParamCal:
                 categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_mvs.items()))
                 categorized_angle_ssr_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_ssr.items()))
 
-                merged_angle_vv_soils_mvs = self.merge_dicts(categorized_angle_mvs, categorized_angle_vv_soil)
+                merged_angle_vv_soils_mvs = self.merge_dicts(categorized_angle_mvs, categorized_angle_ssr, categorized_angle_vv_soil)
                 # print(merged_angle_vv_soils_mvs)
-                merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
+                merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1], el[1][2])), 
                     merged_angle_vv_soils_mvs.items()))
                 
                 wcm_param_doy[day_of_year] = self.merge_dicts(categorized_angle_Avv_mean, categorized_angle_Bvv_mean, 
