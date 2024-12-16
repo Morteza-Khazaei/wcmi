@@ -240,7 +240,7 @@ class VegParamCal:
     def curve_fit_Cvv_Dvv(self, x_arr, y_arr):
         x_arr = np.array(x_arr)
         y_arr = np.array(y_arr)
-        
+
         def exp_func(x, c, d):
             return c * np.log(d * x)
         
@@ -250,13 +250,21 @@ class VegParamCal:
 
             # Calculate the R-squared value
             y_pred = exp_func(x_arr, Cvv, Dvv)
+
+            # Convert x_data and y_fit to a pandas DataFrame
+            data_for_lineplot = pd.DataFrame({'x': x_arr, 'y': y_pred})
+
+            # Now use the DataFrame in sns.lineplot
+            sns.scatterplot(x=x_arr, y=y_arr)
+            sns.lineplot(data=data_for_lineplot, x='x', y='y', color='red', label='Fitted Exponential Curve')
+            plt.show()
             
             # calculate r-squared
             r2 = r2_score(y_arr, y_pred)
             
             # Print the R-squared value
             print(f'R2: {r2:.3f}')
-            
+
             return [Cvv, Dvv]
             
         except:
