@@ -242,7 +242,7 @@ class VegParamCal:
         y_arr = np.array(y_arr)
 
         def exp_func(x, c, d):
-            return c + np.log(d * x)
+            return c * np.log(d * x)
         
         try:
             params, covariance = curve_fit(exp_func, x_arr, y_arr)
