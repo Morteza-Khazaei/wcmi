@@ -229,9 +229,12 @@ class VegParamCal:
     def merge_dicts(self, *dicts):
         # Collect all unique keys across dictionaries
         all_keys = set().union(*dicts)
+
+        # Helper function to flatten a list
+        flatten = lambda lst: reduce(lambda x, y: x + (y if isinstance(y, list) else [y]), lst, [])
         
         # Build the merged dictionary using lambda and filter to drop None values
-        return {key: list(filter(None, [d.get(key) for d in dicts])) for key in all_keys}
+        return {key: list(filter(None, flatten([d.get(key) for d in dicts]))) for key in all_keys}
     
     def to_power(self, dB):
         return 10**(dB/10)
