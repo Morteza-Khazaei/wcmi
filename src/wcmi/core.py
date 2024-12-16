@@ -249,32 +249,32 @@ class VegParamCal:
             # Calculate the exponential function
             return c * np.log(ssm * d) + e * log(ssr * f) + g
         
-        try:
-            params, covariance = curve_fit(exp_func, x_arr, y_arr)
-            Cvv, Dvv, Evv, Fvv, Gvv = params
+        # try:
+        params, covariance = curve_fit(exp_func, x_arr, y_arr)
+        Cvv, Dvv, Evv, Fvv, Gvv = params
 
-            # Calculate the R-squared value
-            y_pred = exp_func(x_arr, Cvv, Dvv, Evv, Fvv, Gvv)
+        # Calculate the R-squared value
+        y_pred = exp_func(x_arr, Cvv, Dvv, Evv, Fvv, Gvv)
 
-            # Convert x_data and y_fit to a pandas DataFrame
-            data_for_lineplot = pd.DataFrame({'ssm': x_arr_ssm, 'ssr': x_arr_ssr, 'sigma_vv': y_pred})
+        # Convert x_data and y_fit to a pandas DataFrame
+        data_for_lineplot = pd.DataFrame({'ssm': x_arr_ssm, 'ssr': x_arr_ssr, 'sigma_vv': y_pred})
 
-            # Now use the DataFrame in sns.lineplot
-            sns.scatterplot(x=x_arr_ssm, y=y_arr, color='blue', label='SSM')
-            sns.scatterplot(x=x_arr_ssr, y=y_arr, color='red', label='SSR')
-            sns.lineplot(data=data_for_lineplot, x='ssm', y='sigma_vv', color='red', label='Fitted Exponential Curve')
-            plt.show()
+        # Now use the DataFrame in sns.lineplot
+        sns.scatterplot(x=x_arr_ssm, y=y_arr, color='blue', label='SSM')
+        sns.scatterplot(x=x_arr_ssr, y=y_arr, color='red', label='SSR')
+        sns.lineplot(data=data_for_lineplot, x='ssm', y='sigma_vv', color='red', label='Fitted Exponential Curve')
+        plt.show()
+        
+        # calculate r-squared
+        r2 = r2_score(y_arr, y_pred)
+        
+        # Print the R-squared value
+        print(f'R2: {r2:.3f}')
+
+        return [Cvv, Dvv, Evv, Fvv, Gvv]
             
-            # calculate r-squared
-            r2 = r2_score(y_arr, y_pred)
-            
-            # Print the R-squared value
-            print(f'R2: {r2:.3f}')
-
-            return [Cvv, Dvv, Evv, Fvv, Gvv]
-            
-        except:
-            return [np.nan, np.nan, np.nan, np.nan, np.nan]
+        # except:
+        #     return [np.nan, np.nan, np.nan, np.nan, np.nan]
     
     def residuals_local(self, params, vv_obs, theta_rad, vwc):
         A, B, mv, s = params
