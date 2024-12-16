@@ -474,7 +474,7 @@ class VegParamCal:
                         
                     else:
                         wcm_params = default_wcm_params[day_of_year][nearest_int_angle]
-                        A_init, B_init, Cvv_Dvv, ssm, ssr = wcm_params
+                        A_init, B_init, Cvv, Dvv, ssm, ssr = wcm_params
 
                     ssm_max = ssm + ssm_inv_thr
                     ssm_min = ssm - ssm_inv_thr
