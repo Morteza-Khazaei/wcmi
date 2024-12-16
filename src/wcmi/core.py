@@ -226,14 +226,12 @@ class VegParamCal:
 
         return df_melted
 
-    def mergeDictionary(self, dict1, dict2):
-        merged = dict2.copy()  # Start with a copy of the first dictionary
-        for key, value in dict1.items():
-            if key in dict2:
-                merged[key] = [value, dict2[key]]  # Combine values if key exists in both
-            else:
-                merged[key] = value  # Add the new key-value pair
-        return merged
+    def merge_dicts(self, *dicts):
+        # Collect all unique keys across dictionaries
+        all_keys = set().union(*dicts)
+        
+        # Build the merged dictionary using lambda and filter to drop None values
+        return {key: list(filter(None, [d.get(key) for d in dicts])) for key in all_keys}
     
     def to_power(self, dB):
         return 10**(dB/10)
@@ -520,17 +518,13 @@ class VegParamCal:
                 categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_Bvv.items()))
                 categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_mvs.items()))
                 categorized_angle_ssr_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_ssr.items()))
-                merged_angle_Avv_Bvv = self.mergeDictionary(categorized_angle_Avv_mean, categorized_angle_Bvv_mean)
-                merged_angle_mvs_ssr = self.mergeDictionary(categorized_angle_mvs_mean, categorized_angle_ssr_mean)
 
-                merged_angle_vv_soils_mvs = self.mergeDictionary(categorized_angle_mvs, categorized_angle_vv_soil)
+                merged_angle_vv_soils_mvs = self.merge_dicts(categorized_angle_mvs, categorized_angle_vv_soil)
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
-                merged_wcm_params = self.mergeDictionary(merged_angle_Avv_Bvv, merged_angle_Cvv_Dvv)
-                merged_wcm_params = self.mergeDictionary(merged_wcm_params, merged_angle_mvs_ssr)
-                
-                wcm_param_doy[day_of_year] = merged_wcm_params
+                wcm_param_doy[day_of_year] = self.merge_dicts(categorized_angle_Avv_mean, categorized_angle_Bvv_mean, 
+                merged_angle_Cvv_Dvv, categorized_angle_mvs_mean, categorized_angle_ssr_mean)
         
         return wcm_param_doy
 
@@ -610,12 +604,10 @@ class VegParamCal:
 
                 categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_mvs.items()))
 
-                merged_angle_vv_soils_mvs = self.mergeDictionary(categorized_angle_mvs, categorized_angle_vv_soil)
+                merged_angle_vv_soils_mvs = self.merge_dicts(categorized_angle_mvs, categorized_angle_vv_soil)
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
-                merged_wcm_params = self.mergeDictionary(merged_angle_Cvv_Dvv, categorized_angle_mvs_mean)
-                
-                wcm_param_doy[day_of_year] = merged_wcm_params
+                wcm_param_doy[day_of_year] = self.merge_dicts(merged_angle_Cvv_Dvv, categorized_angle_mvs_mean)
         
         return wcm_param_doy
