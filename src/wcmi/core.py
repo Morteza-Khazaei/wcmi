@@ -261,7 +261,6 @@ class VegParamCal:
 
         # Now use the DataFrame in sns.lineplot
         sns.scatterplot(x=x_arr_ssm, y=y_arr, color='blue', label='SSM')
-        sns.scatterplot(x=x_arr_ssr, y=y_arr, color='red', label='SSR')
         sns.lineplot(data=data_for_lineplot, x='ssm', y='sigma_vv', color='red', label='Fitted Exponential Curve')
         plt.show()
         
