@@ -211,14 +211,10 @@ class VegParamCal:
         # drop constants
         df_melted.drop(columns=['constants'], inplace=True)
 
-        # Extract wcm soil params
-        df_melted['Cvv'] = df_melted[0].apply(lambda x: x[0] if isinstance(x, list) else None)
-        df_melted['Dvv'] = df_melted[0].apply(lambda x: x[1] if isinstance(x, list) else None)
-        df_melted['ssm'] = df_melted[1]
+        # rename 0, 1, 2 to Cvv, Dvv, and ssm
+        df_melted.rename(columns={0: 'Cvv', 1: 'Dvv', 2: 'ssm'}, inplace=True)
 
         df_melted['angle'] = df_melted['angle (deg)'].astype(int)
-
-        df_melted.drop(columns=[0, 1], inplace=True)
 
         return df_melted
 
