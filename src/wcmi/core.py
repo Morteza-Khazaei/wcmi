@@ -517,7 +517,7 @@ class VegParamCal:
                 categorized_angle_ssr_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_ssr.items()))
 
                 merged_angle_vv_soils_mvs = self.merge_dicts(categorized_angle_mvs, categorized_angle_vv_soil)
-                print(merged_angle_vv_soils_mvs))
+                print(merged_angle_vv_soils_mvs)
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
