@@ -247,7 +247,7 @@ class VegParamCal:
         def exp_func(X, c, d, e, f, g):
             ssm, ssr = X
             # Calculate the exponential function
-            return c * np.log(ssm * d) + e * log(ssr * f) + g
+            return c * np.log(ssm * d) + e * np.log(ssr * f) + g
         
         # try:
         params, covariance = curve_fit(exp_func, x_arr, y_arr)
