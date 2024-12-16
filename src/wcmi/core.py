@@ -227,11 +227,11 @@ class VegParamCal:
         all_keys = set().union(*dicts)
 
         # Helper function to flatten a list
-        flatten = lambda lst: reduce(lambda x, y: x + (y if isinstance(y, list) else [y]), lst, [])
+        flatten_func = lambda lst: reduce(lambda x, y: x + (y if isinstance(y, list) else [y]), lst, [])
         
         # Build the merged dictionary using lambda and filter to drop None values
         if flatten:
-            return {key: list(filter(None, flatten([d.get(key) for d in dicts]))) for key in all_keys}
+            return {key: list(filter(None, flatten_func([d.get(key) for d in dicts]))) for key in all_keys}
         else:
             return {key: list(filter(None, [d.get(key) for d in dicts])) for key in all_keys}
     
@@ -524,9 +524,8 @@ class VegParamCal:
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
-                wcm_param_doy[day_of_year] = self.merge_dicts(flatten=True, 
-                categorized_angle_Avv_mean, categorized_angle_Bvv_mean, 
-                merged_angle_Cvv_Dvv, categorized_angle_mvs_mean, categorized_angle_ssr_mean)
+                wcm_param_doy[day_of_year] = self.merge_dicts(categorized_angle_Avv_mean, categorized_angle_Bvv_mean, 
+                merged_angle_Cvv_Dvv, categorized_angle_mvs_mean, categorized_angle_ssr_mean, flatten=True)
         
         return wcm_param_doy
 
@@ -610,6 +609,6 @@ class VegParamCal:
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
-                wcm_param_doy[day_of_year] = self.merge_dicts(flatten=True, merged_angle_Cvv_Dvv, categorized_angle_mvs_mean)
+                wcm_param_doy[day_of_year] = self.merge_dicts(merged_angle_Cvv_Dvv, categorized_angle_mvs_mean, flatten=True)
         
         return wcm_param_doy
