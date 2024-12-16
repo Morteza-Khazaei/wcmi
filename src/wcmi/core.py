@@ -222,7 +222,7 @@ class VegParamCal:
 
         return df_melted
 
-    def merge_dicts(self, *dicts):
+    def merge_dicts(self, flatten=None, *dicts):
         # Collect all unique keys across dictionaries
         all_keys = set().union(*dicts)
 
@@ -230,7 +230,10 @@ class VegParamCal:
         flatten = lambda lst: reduce(lambda x, y: x + (y if isinstance(y, list) else [y]), lst, [])
         
         # Build the merged dictionary using lambda and filter to drop None values
-        return {key: list(filter(None, flatten([d.get(key) for d in dicts]))) for key in all_keys}
+        if flatten:
+            return {key: list(filter(None, flatten([d.get(key) for d in dicts]))) for key in all_keys}
+        else:
+            return {key: list(filter(None, [d.get(key) for d in dicts])) for key in all_keys}
     
     def to_power(self, dB):
         return 10**(dB/10)
@@ -517,11 +520,12 @@ class VegParamCal:
                 categorized_angle_ssr_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_ssr.items()))
 
                 merged_angle_vv_soils_mvs = self.merge_dicts(categorized_angle_mvs, categorized_angle_vv_soil)
-                print(merged_angle_vv_soils_mvs)
+                # print(merged_angle_vv_soils_mvs)
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
-                wcm_param_doy[day_of_year] = self.merge_dicts(categorized_angle_Avv_mean, categorized_angle_Bvv_mean, 
+                wcm_param_doy[day_of_year] = self.merge_dicts(flatten=True, 
+                categorized_angle_Avv_mean, categorized_angle_Bvv_mean, 
                 merged_angle_Cvv_Dvv, categorized_angle_mvs_mean, categorized_angle_ssr_mean)
         
         return wcm_param_doy
@@ -606,6 +610,6 @@ class VegParamCal:
                 merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
                     merged_angle_vv_soils_mvs.items()))
                 
-                wcm_param_doy[day_of_year] = self.merge_dicts(merged_angle_Cvv_Dvv, categorized_angle_mvs_mean)
+                wcm_param_doy[day_of_year] = self.merge_dicts(flatten=True, merged_angle_Cvv_Dvv, categorized_angle_mvs_mean)
         
         return wcm_param_doy
