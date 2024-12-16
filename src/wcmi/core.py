@@ -222,7 +222,7 @@ class VegParamCal:
 
         return df_melted
 
-    def merge_dicts(self, flatten=None, *dicts):
+    def merge_dicts(self, *dicts, flatten=None)):
         # Collect all unique keys across dictionaries
         all_keys = set().union(*dicts)
 
