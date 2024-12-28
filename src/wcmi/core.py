@@ -590,6 +590,7 @@ class VegParamCal:
                     # extract Avv and Bvv
                     Avv = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].Avv.values[0]
                     Bvv = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].Bvv.values[0]
+                    ssm = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].ssm.values[0]
                     ssr = wcm_veg_param_df[(wcm_veg_param_df.doy == day_of_year) & (wcm_veg_param_df.angle == nearest_int_angle)].ssr.values[0]
                     # print(Avv, Bvv, ssr)
                     
@@ -598,7 +599,7 @@ class VegParamCal:
 
                     # Perform the optimization
                     ks = self.k * ssr
-                    res = differential_evolution(self.residuals_global, bounds=[(0.01, 0.75), ], args=(Avv, Bvv, ks, vv, theta_rad0, vwc))
+                    res = differential_evolution(self.residuals_global, bounds=[(ssm - 0.05, ssm + 0.05), ], args=(Avv, Bvv, ks, vv, theta_rad0, vwc))
                     mv = res.x[0]
 
                     # Oh et al. (2004) model
