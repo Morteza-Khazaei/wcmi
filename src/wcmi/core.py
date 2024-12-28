@@ -288,8 +288,9 @@ class VegParamCal:
 
         return vv_residual
     
-    def residuals_global(self, params, ks, sigma_soil, theta_rad):
-        mv = params
+    def residuals_global(self, params, sigma_soil, theta_rad):
+        mv, s = params
+        ks = self.k * s
 
         # Oh et al. (2004) model
         o = Oh04(mv, ks, theta_rad)
@@ -600,11 +601,9 @@ class VegParamCal:
                     # sigma_tot = sigma_veg + (tau * sigma_soil)
                     sigma_soil = (vv - sigma_veg) / tau
 
-                    # Perform the optimization
-                    ks = self.k * ssr
                     # res = differential_evolution(self.residuals_global, bounds=[(0.05, 0.65), ], args=(ks, sigma_soil, theta_rad))
-                    res = least_squares(self.residuals_global, [ssm, ], args=(ks, sigma_soil, theta_rad), 
-                        bounds=([ssm - 0.05, ], [ssm + 0.05, ]))
+                    res = least_squares(self.residuals_global, [ssm, ssr], args=(sigma_soil, theta_rad), 
+                        bounds=([ssm - 0.05, 0.001], [ssm + 0.05, 5]))
                     mv = res.x[0]
 
                     categorized_angle_mvs[nearest_int_angle].append(mv)
