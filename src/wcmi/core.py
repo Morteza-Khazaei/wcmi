@@ -599,7 +599,9 @@ class VegParamCal:
 
                     # Perform the optimization
                     ks = self.k * ssr
-                    res = differential_evolution(self.residuals_global, bounds=[(ssm - 0.05, ssm + 0.05), ], args=(Avv, Bvv, ks, vv, theta_rad0, vwc))
+                    # res = differential_evolution(self.residuals_global, bounds=[(ssm - 0.05, ssm + 0.05), ], args=(Avv, Bvv, ks, vv, theta_rad0, vwc))
+                    res = least_squares(self.residuals_global, [ssm, ], args=(Avv, Bvv, ks, vv, theta_rad0, vwc), 
+                        bounds=([ssm - 0.05, ], [ssm + 0.05, ]))
                     mv = res.x[0]
 
                     # Oh et al. (2004) model
