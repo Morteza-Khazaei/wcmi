@@ -602,9 +602,9 @@ class VegParamCal:
 
                     # Perform the optimization
                     ks = self.k * ssr
-                    res = differential_evolution(self.residuals_global, bounds=[(0.05, 0.65), ], args=(ks, sigma_soil, theta_rad))
-                    # res = least_squares(self.residuals_global, [ssm, ], args=(ks, sigma_soil, theta_rad), 
-                    #     bounds=([ssm - 0.05, ], [ssm + 0.05, ]))
+                    # res = differential_evolution(self.residuals_global, bounds=[(0.05, 0.65), ], args=(ks, sigma_soil, theta_rad))
+                    res = least_squares(self.residuals_global, [ssm, ], args=(ks, sigma_soil, theta_rad), 
+                        bounds=([ssm - 0.05, ], [ssm + 0.05, ]))
                     mv = res.x[0]
 
                     categorized_angle_mvs[nearest_int_angle].append(mv)
