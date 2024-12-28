@@ -288,18 +288,14 @@ class VegParamCal:
 
         return vv_residual
     
-    def residuals_global(self, params, A, B, ks, vv_obs, theta_rad, vwc):
-        mv = params
-        V1, V2 = vwc, vwc
+    def residuals_global(self, params, sigma_soil, theta_rad):
+        mv, ks = params
 
         # Oh et al. (2004) model
         o = Oh04(mv, ks, theta_rad)
         vh_soil, vv_soil, hh_soil = o.get_sim()
 
-        # Water Cloud Model (WCM)
-        vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
-
-        vv_residual = np.sqrt(np.square(vv_obs - vv_sim))
+        vv_residual = np.sqrt(np.square(sigma_soil - vv_soil))
 
         return vv_residual
     
@@ -595,22 +591,29 @@ class VegParamCal:
                     # print(Avv, Bvv, ssr)
                     
                     # Degrees to Rad
-                    theta_rad0 = np.deg2rad(angle)
+                    theta_rad = np.deg2rad(angle)
+
+                    # WCM calculations
+                    cos_theta = np.cos(theta_rad)
+                    tau = np.exp(-2 * Bvv * vwc / cos_theta)
+                    sigma_veg = Avv * vwc * cos_theta * (1 - tau)
+                    # sigma_tot = sigma_veg + (tau * sigma_soil)
+                    sigma_soil = (vv - sigma_veg) / tau
 
                     # Perform the optimization
                     ks = self.k * ssr
                     # res = differential_evolution(self.residuals_global, bounds=[(ssm - 0.05, ssm + 0.05), ], args=(Avv, Bvv, ks, vv, theta_rad0, vwc))
-                    res = least_squares(self.residuals_global, [ssm, ], args=(Avv, Bvv, ks, vv, theta_rad0, vwc), 
-                        bounds=([ssm - 0.05, ], [ssm + 0.05, ]))
+                    res = least_squares(self.residuals_global, [ssm, ks], args=(sigma_soil, theta_rad), 
+                        bounds=([ssm - 0.05, 0.001], [ssm + 0.05, 5]))
                     mv = res.x[0]
 
-                    # Oh et al. (2004) model
-                    o = Oh04(mv, ks, theta_rad0)
-                    vh_soil, vv_soil, hh_soil = o.get_sim()
+                    # # Oh et al. (2004) model
+                    # o = Oh04(mv, ks, theta_rad0)
+                    # vh_soil, vv_soil, hh_soil = o.get_sim()
                     # print(mv, vh_soil, vv_soil, hh_soil)
 
                     categorized_angle_mvs[nearest_int_angle].append(mv)
-                    categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
+                    categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(sigma_soil))
 
                 categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_mvs.items()))
 
