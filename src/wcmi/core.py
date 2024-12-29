@@ -97,9 +97,9 @@ class VegParamCal:
         
         return wcm_veg_param_ct_st_dp
     
-    def cal_wcm_soil_param(self, wcm_veg_param_df):
+    def cal_wcm_soil_param(self, wcm_veg_param_df, n_calls=15):
 
-        wcm_soil_param_dict = self.inverse_wcm_soil_param(wcm_veg_param_df)
+        wcm_soil_param_dict = self.inverse_wcm_soil_param(wcm_veg_param_df, n_calls=n_calls)
 
         return wcm_soil_param_dict
 
