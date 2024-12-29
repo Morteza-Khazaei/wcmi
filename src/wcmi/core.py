@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from scipy.optimize import differential_evolution, least_squares, curve_fit
+from skopt import gp_minimize
 from sklearn.metrics import r2_score
 
 
@@ -602,8 +603,9 @@ class VegParamCal:
                     sigma_soil = (vv - sigma_veg) / tau
 
                     # res = differential_evolution(self.residuals_global, bounds=[(0.01, 0.65)], args=(ssr, sigma_soil, theta_rad))
-                    res = least_squares(self.residuals_global, [ssm, ], args=(ssr, sigma_soil, theta_rad), 
-                        bounds=([ssm - 0.05, ], [ssm + 0.05,]))
+                    res = gp_minimize(lambda params: self.residuals_global(params, ssr, sigma_soil, theta_rad), [(0.01, 0.65)], n_calls=50, random_state=42)
+                    # res = least_squares(self.residuals_global, [ssm, ], args=(ssr, sigma_soil, theta_rad), 
+                    #     bounds=([ssm - 0.05, ], [ssm + 0.05,]))
                     mv = res.x[0]
 
                     categorized_angle_mvs[nearest_int_angle].append(mv)
