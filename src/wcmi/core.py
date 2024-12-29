@@ -471,8 +471,8 @@ class VegParamCal:
                         else:
                             ssr = ssr_gt_36deg
 
-                        A_init = 0.25
-                        B_init = 1.0
+                        A_init = 0.1
+                        B_init = 0.5
                         
                     else:
                         wcm_params = default_wcm_params[day_of_year][nearest_int_angle]
