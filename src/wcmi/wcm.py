@@ -5,7 +5,7 @@ def WCM(A, B, V1, V2, theta_rad, sigma_soil):
     
     cos_theta = np.cos(theta_rad)
     
-    tau = np.exp(-2 * B * V2 / cos_theta)
+    tau = np.exp((-2 * B * V2) / cos_theta)
     
     sigma_veg = A * V1 * cos_theta * (1 - tau)
     

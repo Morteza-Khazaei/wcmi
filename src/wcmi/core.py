@@ -290,8 +290,8 @@ class VegParamCal:
         return vv_residual
     
     def residuals_global(self, params, ssr, sigma_soil, theta_rad):
-        mv, s = params[0]
-        ks = self.k * (ssr + s)
+        mv = params[0]
+        ks = self.k * ssr
 
         # Oh et al. (2004) model
         o = Oh04(mv, ks, theta_rad)
@@ -471,8 +471,8 @@ class VegParamCal:
                         else:
                             ssr = ssr_gt_36deg
 
-                        A_init = 1
-                        B_init = 0.25
+                        A_init = 0.25
+                        B_init = 1.0
                         
                     else:
                         wcm_params = default_wcm_params[day_of_year][nearest_int_angle]
@@ -487,10 +487,10 @@ class VegParamCal:
                     ssr_max = 5
 
                     A_min = 0
-                    A_max = 2
+                    A_max = 0.5
 
                     B_min = 0
-                    B_max = 0.5
+                    B_max = 2.0
 
                     # Degrees to Rad
                     theta_rad0 = np.deg2rad(angle)
