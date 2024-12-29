@@ -84,7 +84,7 @@ class VegParamCal:
                         print(f'Loop number: {n}')
                         default_wcm_params = self.inverse_wcm_veg_param(
                             df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
-                            ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
+                            A_bound=A_bound, B_bound=B_bound, ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
                         n += 1
                     
                     wcm_veg_param_dp[dp] = default_wcm_params
