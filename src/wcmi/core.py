@@ -290,9 +290,8 @@ class VegParamCal:
         return vv_residual
     
     def residuals_global(self, params, ssr, sigma_soil, theta_rad):
-        mv = params
+        mv = params[0]
         ks = self.k * ssr
-        print(mv, ks, theta_rad)
 
         # Oh et al. (2004) model
         o = Oh04(mv, ks, theta_rad)
