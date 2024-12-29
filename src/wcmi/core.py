@@ -236,7 +236,7 @@ class VegParamCal:
         return 10**(dB/10)
 
     def to_dB(self, power):
-        return 10*np.log10(power)
+        return 10*np.log10(power + 1e-10)
     
     def curve_fit_Cvv_Dvv(self, x_arr, y_arr):
         x_arr = np.array(x_arr)
