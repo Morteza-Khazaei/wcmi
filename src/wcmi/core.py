@@ -603,7 +603,7 @@ class VegParamCal:
                     sigma_soil = (vv - sigma_veg) / tau
 
                     # res = differential_evolution(self.residuals_global, bounds=[(0.01, 0.65)], args=(ssr, sigma_soil, theta_rad))
-                    res = gp_minimize(lambda params: self.residuals_global(params, ssr, sigma_soil, theta_rad), [(0.01, 0.65)], n_calls=50, random_state=42)
+                    res = gp_minimize(lambda params: self.residuals_global(params, ssr, sigma_soil, theta_rad), [(0.01, 0.65)], n_calls=15, random_state=42)
                     # res = least_squares(self.residuals_global, [ssm, ], args=(ssr, sigma_soil, theta_rad), 
                     #     bounds=([ssm - 0.05, ], [ssm + 0.05,]))
                     mv = res.x[0]
