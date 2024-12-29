@@ -290,8 +290,8 @@ class VegParamCal:
         return vv_residual
     
     def residuals_global(self, params, ssr, sigma_soil, theta_rad):
-        mv = params[0]
-        ks = self.k * ssr
+        mv, s = params[0]
+        ks = self.k * (ssr + s)
 
         # Oh et al. (2004) model
         o = Oh04(mv, ks, theta_rad)
@@ -602,13 +602,13 @@ class VegParamCal:
                     # sigma_tot = sigma_veg + (tau * sigma_soil)
                     sigma_soil = (vv - sigma_veg) / tau
 
-                    # res = differential_evolution(self.residuals_global, bounds=[(0.01, 0.65)], args=(ssr, sigma_soil, theta_rad))
+                    res = differential_evolution(self.residuals_global, bounds=[(0.01, 0.65)], args=(ssr, sigma_soil, theta_rad))
                     # res = gp_minimize(lambda params: self.residuals_global(params, ssr, sigma_soil, theta_rad), [(0.01, 0.65)], n_calls=n_calls, random_state=42)
                     # res = least_squares(self.residuals_global, [ssm, ], args=(ssr, sigma_soil, theta_rad), 
                     #     bounds=([ssm - 0.05, ], [ssm + 0.05,]))
-                    # mv = res.x[0]
+                    mv = res.x[0]
 
-                    categorized_angle_mvs[nearest_int_angle].append(ssm)
+                    categorized_angle_mvs[nearest_int_angle].append(mv)
                     categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(sigma_soil))
 
                 categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_mvs.items()))
