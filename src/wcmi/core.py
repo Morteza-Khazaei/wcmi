@@ -51,7 +51,7 @@ class VegParamCal:
         
         return None
 
-    def cal_wcm_veg_param(self, ):
+    def cal_wcm_veg_param(self, A_bound=[0, 0.1, 0.5], B_bound=[0, 0.75, 2.0]):
         
         # find S1 backscatter csv file
         backscatter_files = self.search_file(self.backscatter_dir, year_filter=self.year)
@@ -75,7 +75,7 @@ class VegParamCal:
                         print(f'Calculate default wcm params for croptype: {ct}, station: {rst}, depth: {dp}')
                         default_wcm_params = self.inverse_wcm_veg_param(
                             df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
-                            ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
+                            A_bound=A_bound, B_bound=B_bound, ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
                     
                     # do while loop for 3 times on default_wcm_params to reach better accuracies in wcm veg params
                     n = 0
@@ -406,7 +406,8 @@ class VegParamCal:
 
         return df
     
-    def inverse_wcm_veg_param(self, df_sigma, df_risma, ssm_inv_thr, default_wcm_params, ssr_lt_36deg, ssr_gt_36deg):
+    def inverse_wcm_veg_param(self, df_sigma, df_risma, ssm_inv_thr, default_wcm_params, 
+        ssr_lt_36deg, ssr_gt_36deg, A_bound, B_bound):
 
         wcm_param_doy = {}
 
@@ -471,8 +472,8 @@ class VegParamCal:
                         else:
                             ssr = ssr_gt_36deg
 
-                        A_init = 0.1
-                        B_init = 0.5
+                        A_init = A_bound[1]
+                        B_init = B_bound[1]
                         
                     else:
                         wcm_params = default_wcm_params[day_of_year][nearest_int_angle]
@@ -486,11 +487,11 @@ class VegParamCal:
                     ssr_min = 0
                     ssr_max = 5
 
-                    A_min = 0
-                    A_max = 0.5
+                    A_min = A_bound[0]
+                    A_max = A_bound[2]
 
-                    B_min = 0
-                    B_max = 2.0
+                    B_min = B_bound[0]
+                    B_max = B_bound[2]
 
                     # Degrees to Rad
                     theta_rad0 = np.deg2rad(angle)
@@ -507,10 +508,6 @@ class VegParamCal:
                     # Oh et al. (2004) model
                     o = Oh04(mv, ks, theta_rad0)
                     vh_soil, vv_soil, hh_soil = o.get_sim()
-
-                    # # Water Cloud Model (WCM)
-                    # V1, V2 = vwc, vwc
-                    # vv_tot, vv_veg, tau = WCM(A_init, B_init, V1, V2, theta_rad0, vv_soil)
 
                     categorized_angle_Avv[nearest_int_angle].append(A)
                     categorized_angle_Bvv[nearest_int_angle].append(B)
