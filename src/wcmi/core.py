@@ -602,8 +602,8 @@ class VegParamCal:
                     sigma_soil = (vv - sigma_veg) / tau
 
                     # res = differential_evolution(self.residuals_global, bounds=[(0.01, 0.65)], args=(ssr, sigma_soil, theta_rad))
-                    res = least_squares(self.residuals_global, [0.3, ], args=(ssr, sigma_soil, theta_rad), 
-                        bounds=([0.05, ], [0.65,]))
+                    res = least_squares(self.residuals_global, [ssm, ], args=(ssr, sigma_soil, theta_rad), 
+                        bounds=([ssm - 0.05, ], [ssm + 0.05,]))
                     mv = res.x[0]
 
                     categorized_angle_mvs[nearest_int_angle].append(mv)
