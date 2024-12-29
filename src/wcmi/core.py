@@ -236,7 +236,7 @@ class VegParamCal:
         return 10**(dB/10)
 
     def to_dB(self, power):
-        return 10*np.log10(power + 1e-10)
+        return 10*np.log10(power)
     
     def curve_fit_Cvv_Dvv(self, x_arr, y_arr):
         x_arr = np.array(x_arr)
@@ -603,12 +603,12 @@ class VegParamCal:
                     sigma_soil = (vv - sigma_veg) / tau
 
                     # res = differential_evolution(self.residuals_global, bounds=[(0.01, 0.65)], args=(ssr, sigma_soil, theta_rad))
-                    res = gp_minimize(lambda params: self.residuals_global(params, ssr, sigma_soil, theta_rad), [(0.01, 0.65)], n_calls=n_calls, random_state=42)
+                    # res = gp_minimize(lambda params: self.residuals_global(params, ssr, sigma_soil, theta_rad), [(0.01, 0.65)], n_calls=n_calls, random_state=42)
                     # res = least_squares(self.residuals_global, [ssm, ], args=(ssr, sigma_soil, theta_rad), 
                     #     bounds=([ssm - 0.05, ], [ssm + 0.05,]))
-                    mv = res.x[0]
+                    # mv = res.x[0]
 
-                    categorized_angle_mvs[nearest_int_angle].append(mv)
+                    categorized_angle_mvs[nearest_int_angle].append(ssm)
                     categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(sigma_soil))
 
                 categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_mvs.items()))
