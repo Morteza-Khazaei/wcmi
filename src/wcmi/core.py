@@ -51,7 +51,7 @@ class VegParamCal:
         
         return None
 
-    def cal_wcm_veg_param(self, A_bound=(0, 1.0), B_bound=(0, 2.0), S_bound=(0, 5), n_calls=15):
+    def cal_wcm_veg_param(self, A_bound=(0.001, 1.0), B_bound=(0.001, 2.0), S_bound=(0.001, 5.0), n_calls=15):
         
         # find S1 backscatter csv file
         backscatter_files = self.search_file(self.backscatter_dir, year_filter=self.year)
@@ -303,10 +303,6 @@ class VegParamCal:
         o = Oh04(mv, ks, theta_rad)
         vh_soil, vv_soil, hh_soil = o.get_sim()
         print(f"vv_soil: {vv_soil}, vv_obs: {vv_obs}")
-
-        # if vv_soil is nan continue
-        if np.isnan(vv_soil):
-            vv_soil = 1e-5
 
         # Water Cloud Model (WCM)
         vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
