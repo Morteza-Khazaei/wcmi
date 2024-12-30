@@ -297,12 +297,12 @@ class VegParamCal:
         ks = self.k * s
         V1, V2 = vwc, vwc
 
-        print(f"A: {A}, B: {B}, mv: {mv}, ks: {ks}, theta_rad: {theta_rad}, vwc: {vwc}")
+        # print(f"A: {A}, B: {B}, mv: {mv}, ks: {ks}, theta_rad: {theta_rad}, vwc: {vwc}")
 
         # Oh et al. (2004) model
         o = Oh04(mv, ks, theta_rad)
         vh_soil, vv_soil, hh_soil = o.get_sim()
-        print(f"vv_soil: {vv_soil}, vv_obs: {vv_obs}")
+        # print(f"vv_soil: {vv_soil}, vv_obs: {vv_obs}")
 
         # Water Cloud Model (WCM)
         vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
@@ -613,7 +613,7 @@ class VegParamCal:
                     # Degrees to Rad
                     theta_rad = np.deg2rad(angle)
                     
-                    print(ssm, vv, theta_rad, vwc)
+                    # print(ssm, vv, theta_rad, vwc)
                     
                     # Perform the optimization
                     res = gp_minimize(lambda params: self.residuals_local_v2(params, ssm, vv, theta_rad, vwc), 
@@ -622,7 +622,7 @@ class VegParamCal:
                     ks = self.k * s
 
                     # Oh et al. (2004) model
-                    o = Oh04(mv, ks, theta_rad)
+                    o = Oh04(ssm, ks, theta_rad)
                     vh_soil, vv_soil, hh_soil = o.get_sim()
 
                     categorized_angle_Avv[nearest_int_angle].append(A)
