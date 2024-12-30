@@ -611,13 +611,13 @@ class VegParamCal:
                     theta_rad = np.deg2rad(angle)
                     
                     # Perform the optimization
-                    res = gp_minimize(lambda params: self.residuals_local_v2(params, ssm, vv_obs, theta_rad, vwc), 
+                    res = gp_minimize(lambda params: self.residuals_local_v2(params, ssm, vv, theta_rad, vwc), 
                         [A_bound, B_bound, S_bound], n_calls=n_calls, random_state=42)
                     A, B, s = res.x
                     ks = self.k * s
 
                     # Oh et al. (2004) model
-                    o = Oh04(mv, ks, theta_rad0)
+                    o = Oh04(mv, ks, theta_rad)
                     vh_soil, vv_soil, hh_soil = o.get_sim()
 
                     categorized_angle_Avv[nearest_int_angle].append(A)
