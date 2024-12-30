@@ -51,7 +51,7 @@ class VegParamCal:
         
         return None
 
-    def cal_wcm_veg_param(self, A_bound=(0.001, 1.0), B_bound=(0.001, 2.0), S_bound=(0.001, 5.0), n_calls=15):
+    def cal_wcm_veg_param(self, A_bound=(0.001, 1.0), B_bound=(0.001, 2.0), MV_bound=(0.01, 0.65), S_bound=(0.001, 5.0), n_calls=15):
         
         # find S1 backscatter csv file
         backscatter_files = self.search_file(self.backscatter_dir, year_filter=self.year)
@@ -88,7 +88,8 @@ class VegParamCal:
                     #     n += 1
 
                     default_wcm_params = self.inverse_wcm_veg_param_v2(
-                        df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, A_bound=A_bound, B_bound=B_bound, S_bound=S_bound, n_calls=n_calls)
+                        df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, 
+                        A_bound=A_bound, B_bound=B_bound, MV_bound=MV_bound, S_bound=S_bound, n_calls=n_calls)
                     
                     wcm_veg_param_dp[dp] = default_wcm_params
                     
@@ -292,17 +293,14 @@ class VegParamCal:
 
         return vv_residual
     
-    def residuals_local_v2(self, params, mv, vv_obs, theta_rad, vwc):
-        A, B, s = params
+    def residuals_local_v2(self, params, vv_obs, theta_rad, vwc):
+        A, B, mv, s = params
         ks = self.k * s
         V1, V2 = vwc, vwc
-
-        # print(f"A: {A}, B: {B}, mv: {mv}, ks: {ks}, theta_rad: {theta_rad}, vwc: {vwc}")
 
         # Oh et al. (2004) model
         o = Oh04(mv, ks, theta_rad)
         vh_soil, vv_soil, hh_soil = o.get_sim()
-        # print(f"vv_soil: {vv_soil}, vv_obs: {vv_obs}")
 
         # Water Cloud Model (WCM)
         vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
@@ -552,7 +550,7 @@ class VegParamCal:
         
         return wcm_param_doy
 
-    def inverse_wcm_veg_param_v2(self, df_sigma, df_risma, A_bound, B_bound, S_bound, n_calls):
+    def inverse_wcm_veg_param_v2(self, df_sigma, df_risma, A_bound, B_bound, MV_bound, S_bound, n_calls):
 
         wcm_param_doy = {}
 
@@ -616,13 +614,13 @@ class VegParamCal:
                     # print(ssm, vv, theta_rad, vwc)
                     
                     # Perform the optimization
-                    res = gp_minimize(lambda params: self.residuals_local_v2(params, ssm, vv, theta_rad, vwc), 
-                        [A_bound, B_bound, S_bound], n_calls=n_calls, random_state=42)
-                    A, B, s = res.x
+                    res = gp_minimize(lambda params: self.residuals_local_v2(params, vv, theta_rad, vwc), 
+                        [A_bound, B_bound, MV_bound, S_bound], n_calls=n_calls, random_state=42)
+                    A, B, mv, s = res.x
                     ks = self.k * s
 
                     # Oh et al. (2004) model
-                    o = Oh04(ssm, ks, theta_rad)
+                    o = Oh04(mv, ks, theta_rad)
                     vh_soil, vv_soil, hh_soil = o.get_sim()
 
                     categorized_angle_Avv[nearest_int_angle].append(A)
