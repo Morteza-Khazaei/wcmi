@@ -306,8 +306,8 @@ class VegParamCal:
 
         # if vv_soil is nan continue
         if np.isnan(vv_soil):
-            continue
-            
+            vv_soil = 1e-5
+
         # Water Cloud Model (WCM)
         vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
 
