@@ -625,7 +625,7 @@ class VegParamCal:
 
                     categorized_angle_Avv[nearest_int_angle].append(A)
                     categorized_angle_Bvv[nearest_int_angle].append(B)
-                    categorized_angle_mvs[nearest_int_angle].append(ssm)
+                    categorized_angle_mvs[nearest_int_angle].append(mv)
                     categorized_angle_ssr[nearest_int_angle].append(s)
                     categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
 
