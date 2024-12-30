@@ -51,7 +51,7 @@ class VegParamCal:
         
         return None
 
-    def cal_wcm_veg_param(self, A_bound=[0, 0.1, 0.5], B_bound=[0, 0.75, 2.0]):
+    def cal_wcm_veg_param(self, A_bound=(0, 1.0), B_bound=(0, 2.0), S_bound=(0, 5), n_calls=15):
         
         # find S1 backscatter csv file
         backscatter_files = self.search_file(self.backscatter_dir, year_filter=self.year)
@@ -71,21 +71,24 @@ class VegParamCal:
                     # read radar backscatter csv
                     self.S1_sigma_df_ct = self.read_radar_backscatter(backscatter_files[0], croptype=ct)
 
-                    if not default_wcm_params:
-                        print(f'Calculate default wcm params for croptype: {ct}, station: {rst}, depth: {dp}')
-                        default_wcm_params = self.inverse_wcm_veg_param(
-                            df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
-                            A_bound=A_bound, B_bound=B_bound, ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
+                    # if not default_wcm_params:
+                    #     print(f'Calculate default wcm params for croptype: {ct}, station: {rst}, depth: {dp}')
+                    #     default_wcm_params = self.inverse_wcm_veg_param(
+                    #         df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
+                    #         A_bound=A_bound, B_bound=B_bound, ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
                     
-                    # do while loop for 3 times on default_wcm_params to reach better accuracies in wcm veg params
-                    n = 0
-                    while n < self.iter:
-                        # print a report about each loop
-                        print(f'Loop number: {n}')
-                        default_wcm_params = self.inverse_wcm_veg_param(
-                            df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
-                            A_bound=A_bound, B_bound=B_bound, ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
-                        n += 1
+                    # # do while loop for 3 times on default_wcm_params to reach better accuracies in wcm veg params
+                    # n = 0
+                    # while n < self.iter:
+                    #     # print a report about each loop
+                    #     print(f'Loop number: {n}')
+                    #     default_wcm_params = self.inverse_wcm_veg_param(
+                    #         df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, ssm_inv_thr=self.ssm_inv_thr, default_wcm_params=default_wcm_params, 
+                    #         A_bound=A_bound, B_bound=B_bound, ssr_lt_36deg=self.ssr_lt_36deg, ssr_gt_36deg=self.ssr_gt_36deg)
+                    #     n += 1
+
+                    default_wcm_params = self.inverse_wcm_veg_param_v2(
+                        df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, A_bound=A_bound, B_bound=B_bound, S_bound=S_bound, n_calls=n_calls)
                     
                     wcm_veg_param_dp[dp] = default_wcm_params
                     
@@ -275,6 +278,22 @@ class VegParamCal:
     
     def residuals_local(self, params, vv_obs, theta_rad, vwc):
         A, B, mv, s = params
+        ks = self.k * s
+        V1, V2 = vwc, vwc
+
+        # Oh et al. (2004) model
+        o = Oh04(mv, ks, theta_rad)
+        vh_soil, vv_soil, hh_soil = o.get_sim()
+
+        # Water Cloud Model (WCM)
+        vv_sim, _, _ = WCM(A, B, V1, V2, theta_rad, vv_soil)
+
+        vv_residual = np.sqrt(np.square(vv_obs - vv_sim))
+
+        return vv_residual
+    
+    def residuals_local_v2(self, params, mv, vv_obs, theta_rad, vwc):
+        A, B, s = params
         ks = self.k * s
         V1, V2 = vwc, vwc
 
@@ -530,6 +549,98 @@ class VegParamCal:
         
         return wcm_param_doy
 
+    def inverse_wcm_veg_param_v2(self, df_sigma, df_risma, A_bound, B_bound, S_bound, n_calls):
+
+        wcm_param_doy = {}
+
+        for lc, df_cluster in df_sigma.groupby('croptype'):
+
+            # drop unnecessary columns
+            df_cluster = df_cluster.drop(['system:index', '.geo', 'croptype'], axis=1)
+            df_t = df_cluster.T
+            df_t.index.rename('date', inplace=True)
+            df_t.reset_index(inplace=True)
+
+            # Add new column named 'band' by using of _** from20200902T001505_VH
+            df_t['band'] = df_t['date'].apply(lambda x: x.split('_')[1])
+
+            # convert date to datetime by removing _** from20200902T001505_VH
+            df_t['date'] = pd.to_datetime(df_t['date'].apply(lambda x: x.split('_')[0][:8])).dt.strftime('%Y%m%d')
+
+            # Calculate mean of duplicate rows in df_t on numeric columns
+            df_t = df_t.groupby(['date', 'band']).mean().reset_index()
+
+            # Assuming you want to group the DataFrame 'df' in groups of three rows:
+            for g, df_c in df_t.groupby(np.arange(len(df_t)) // 4):
+
+                # Transpose to have four columns per day
+                df_ct = df_c.T
+
+                # Get date
+                date_string = list(set(df_ct.iloc[0].values))[0]
+                date_object = datetime.strptime(date_string, '%Y%m%d')
+                day_of_year = date_object.timetuple().tm_yday
+                print(f'Croptype: {lc}, date: {date_object}, doy: {day_of_year}')
+
+                # Use date as column names and drop first row
+                df_ct.columns = df_ct.iloc[1]
+                df_ct = df_ct[2:]
+                df_ct.reset_index(inplace=True, drop=True)
+
+                # Drop nodata
+                df_ct = df_ct[df_ct != 0].dropna()
+
+                if df_ct.shape[0] <= 30:
+                    continue
+                
+                ssm = df_risma[df_risma.doy == day_of_year].value.mean()
+
+                categorized_angle_Avv = defaultdict(list)
+                categorized_angle_Bvv = defaultdict(list)
+                categorized_angle_mvs = defaultdict(list)
+                categorized_angle_ssr = defaultdict(list)
+                categorized_angle_vv_soil = defaultdict(list)
+
+                for idx, row in df_ct.iterrows():
+
+                    vh, vv, angle, vwc = row.values
+
+                    nearest_int_angle = round(angle)  # Find the nearest integer
+
+                    # Degrees to Rad
+                    theta_rad = np.deg2rad(angle)
+                    
+                    # Perform the optimization
+                    res = gp_minimize(lambda params: self.residuals_local_v2(params, ssm, vv_obs, theta_rad, vwc), 
+                        [A_bound, B_bound, S_bound], n_calls=n_calls, random_state=42)
+                    A, B, s = res.x
+                    ks = self.k * s
+
+                    # Oh et al. (2004) model
+                    o = Oh04(mv, ks, theta_rad0)
+                    vh_soil, vv_soil, hh_soil = o.get_sim()
+
+                    categorized_angle_Avv[nearest_int_angle].append(A)
+                    categorized_angle_Bvv[nearest_int_angle].append(B)
+                    categorized_angle_mvs[nearest_int_angle].append(ssm)
+                    categorized_angle_ssr[nearest_int_angle].append(s)
+                    categorized_angle_vv_soil[nearest_int_angle].append(self.to_dB(vv_soil))
+
+                categorized_angle_Avv_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_Avv.items()))
+                categorized_angle_Bvv_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_Bvv.items()))
+                categorized_angle_mvs_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_mvs.items()))
+                categorized_angle_ssr_mean = dict(map(lambda el: (el[0], np.median(el[1])), categorized_angle_ssr.items()))
+
+                merged_angle_vv_soils_mvs = self.merge_dicts(categorized_angle_mvs, categorized_angle_vv_soil)
+                # print(merged_angle_vv_soils_mvs)
+                merged_angle_Cvv_Dvv = dict(map(lambda el: (el[0], self.curve_fit_Cvv_Dvv(el[1][0], el[1][1])), 
+                    merged_angle_vv_soils_mvs.items()))
+                
+                wcm_param_doy[day_of_year] = self.merge_dicts(categorized_angle_Avv_mean, categorized_angle_Bvv_mean, 
+                merged_angle_Cvv_Dvv, categorized_angle_mvs_mean, categorized_angle_ssr_mean, flatten=True)
+        
+        return wcm_param_doy
+    
     def inverse_wcm_soil_param(self, wcm_veg_param_df, n_calls=15):
         wcm_param_doy = {}
 
