@@ -610,6 +610,8 @@ class VegParamCal:
                     # Degrees to Rad
                     theta_rad = np.deg2rad(angle)
                     
+                    print(ssm, vv, theta_rad, vwc)
+                    
                     # Perform the optimization
                     res = gp_minimize(lambda params: self.residuals_local_v2(params, ssm, vv, theta_rad, vwc), 
                         [A_bound, B_bound, S_bound], n_calls=n_calls, random_state=42)
