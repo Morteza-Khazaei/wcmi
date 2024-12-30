@@ -297,6 +297,8 @@ class VegParamCal:
         ks = self.k * s
         V1, V2 = vwc, vwc
 
+        print(f"A: {A}, B: {B}, mv: {mv}, ks: {ks}, theta_rad: {theta_rad}, vwc: {vwc}")
+
         # Oh et al. (2004) model
         o = Oh04(mv, ks, theta_rad)
         vh_soil, vv_soil, hh_soil = o.get_sim()
