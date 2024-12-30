@@ -51,7 +51,7 @@ class VegParamCal:
         
         return None
 
-    def cal_wcm_veg_param(self, A_bound=(0.001, 1.0), B_bound=(0.001, 2.0), MV_bound=(0.01, 0.65), S_bound=(0.001, 5.0), n_calls=15):
+    def cal_wcm_veg_param(self, A_bound=(0.001, 1.0), B_bound=(0.001, 2.0), S_bound=(0.001, 5.0), n_calls=15):
         
         # find S1 backscatter csv file
         backscatter_files = self.search_file(self.backscatter_dir, year_filter=self.year)
@@ -89,7 +89,7 @@ class VegParamCal:
 
                     default_wcm_params = self.inverse_wcm_veg_param_v2(
                         df_sigma=self.S1_sigma_df_ct, df_risma=df_doy_depth, 
-                        A_bound=A_bound, B_bound=B_bound, MV_bound=MV_bound, S_bound=S_bound, n_calls=n_calls)
+                        A_bound=A_bound, B_bound=B_bound, S_bound=S_bound, n_calls=n_calls)
                     
                     wcm_veg_param_dp[dp] = default_wcm_params
                     
@@ -550,7 +550,7 @@ class VegParamCal:
         
         return wcm_param_doy
 
-    def inverse_wcm_veg_param_v2(self, df_sigma, df_risma, A_bound, B_bound, MV_bound, S_bound, n_calls):
+    def inverse_wcm_veg_param_v2(self, df_sigma, df_risma, A_bound, B_bound, S_bound, n_calls):
 
         wcm_param_doy = {}
 
@@ -611,7 +611,7 @@ class VegParamCal:
                     # Degrees to Rad
                     theta_rad = np.deg2rad(angle)
                     
-                    # print(ssm, vv, theta_rad, vwc)
+                    MV_bound = (ssm - 0.05, ssm + 0.05)
                     
                     # Perform the optimization
                     res = gp_minimize(lambda params: self.residuals_local_v2(params, vv, theta_rad, vwc), 
