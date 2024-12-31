@@ -258,13 +258,13 @@ class VegParamCal:
             # Calculate the R-squared value
             y_pred = exp_func(x_arr, Cvv, Dvv)
 
-            # # Convert x_data and y_fit to a pandas DataFrame
-            data_for_lineplot = pd.DataFrame({'x': x_arr, 'y': y_pred})
+            # # # Convert x_data and y_fit to a pandas DataFrame
+            # data_for_lineplot = pd.DataFrame({'x': x_arr, 'y': y_pred})
 
-            # Now use the DataFrame in sns.lineplot
-            sns.scatterplot(x=x_arr, y=y_arr)
-            sns.lineplot(data=data_for_lineplot, x='x', y='y', color='red', label='Fitted Exponential Curve')
-            plt.show()
+            # # Now use the DataFrame in sns.lineplot
+            # sns.scatterplot(x=x_arr, y=y_arr)
+            # sns.lineplot(data=data_for_lineplot, x='x', y='y', color='red', label='Fitted Exponential Curve')
+            # plt.show()
             
             # calculate r-squared
             r2 = r2_score(y_arr, y_pred)
@@ -611,7 +611,7 @@ class VegParamCal:
                     # Degrees to Rad
                     theta_rad = np.deg2rad(angle)
                     
-                    MV_bound = (ssm - 0.1, ssm + 0.1)
+                    MV_bound = (ssm - 0.05, ssm + 0.05)
                     if MV_bound[0] < 0:
                         MV_bound = (0.001, MV_bound[1])
 
